@@ -1,0 +1,1196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>Annual Review Wheel</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,600&family=Poppins:wght@500;600;700&display=swap">
+<style>
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout: the wheel stays in view on the left as navigator and progress meter; the selected step opens as a working area on the right. Neutral grays, five phase colors. */
+:root {
+  --bg: #f1f1f4;
+  --surface: #ffffff;
+  --field: #f6f6fa;
+  --ink: #1f1f23;
+  --muted: #5d5d66;
+  --line: #c9c9d0;
+  --seg: #ffffff;
+  --hub: #4f4f54;
+  --hub-fg: #ffffff;
+  --accent: #2f4bff;
+  --accent-fg: #ffffff;
+  --p0: #3f51d9; --p0-fg: #ffffff;
+  --p1: #f0b429; --p1-fg: #231a00;
+  --p2: #0b8f7f; --p2-fg: #ffffff;
+  --p3: #e0415a; --p3-fg: #ffffff;
+  --p4: #7d44cf; --p4-fg: #ffffff;
+  --cur: var(--p0); --cur-fg: var(--p0-fg);
+  --font-display: "Poppins", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Literata", Georgia, "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #16161a; --surface: #202026; --field: #2a2a32; --ink: #ececf0; --muted: #a2a2ad; --line: #3a3a43;
+    --seg: #26262d; --hub: #3b3b43; --hub-fg: #f2f2f6;
+    --accent: #8d9dff; --accent-fg: #0f1224; color-scheme: dark;
+    --p0: #94a0ff; --p0-fg: #0f1224; --p1: #f5c451; --p1-fg: #231a00; --p2: #4fd1bf; --p2-fg: #06231f;
+    --p3: #ff8396; --p3-fg: #2a0710; --p4: #bb95f6; --p4-fg: #1a0b33;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #16161a; --surface: #202026; --field: #2a2a32; --ink: #ececf0; --muted: #a2a2ad; --line: #3a3a43;
+  --seg: #26262d; --hub: #3b3b43; --hub-fg: #f2f2f6;
+  --accent: #8d9dff; --accent-fg: #0f1224; color-scheme: dark;
+  --p0: #94a0ff; --p0-fg: #0f1224; --p1: #f5c451; --p1-fg: #231a00; --p2: #4fd1bf; --p2-fg: #06231f;
+  --p3: #ff8396; --p3-fg: #2a0710; --p4: #bb95f6; --p4-fg: #1a0b33;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); }
+.page { max-width: 1240px; margin: 0 auto; padding-block: 26px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 22px; }
+.eyebrow { font: 600 12px/1 var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+h1 { font: 700 clamp(26px, 4vw, 38px)/1.1 var(--font-display); margin: 0 0 8px; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 60ch; font-size: 16px; line-height: 1.55; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.save { font: 500 12px/1 var(--font-display); color: var(--muted); padding: 0 6px; }
+.layout { display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: 32px; align-items: start; }
+@media (max-width: 880px) { .layout { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
+@media (min-width: 881px) { .wheel-wrap { position: sticky; top: 12px; } }
+
+/* buttons and chips */
+button { font-family: inherit; color: inherit; }
+button.ctl { font: 600 13px/1 var(--font-display); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 11px 17px; cursor: pointer; transition: transform .15s, border-color .15s; }
+button.ctl:hover { border-color: var(--cur); transform: translateY(-1px); }
+button.ctl:focus-visible, .chipbtn:focus-visible, .dot:focus-visible, .qpick:focus-visible { outline: 2px solid var(--cur); outline-offset: 2px; }
+button.ctl.primary { background: var(--cur); color: var(--cur-fg); border-color: var(--cur); }
+button.ctl.small { padding: 8px 13px; font-size: 12px; }
+.chipbtn { font: 600 13px/1.1 var(--font-display); background: var(--field); border: 1.5px solid var(--line); border-radius: 999px; padding: 9px 14px; cursor: pointer; transition: transform .15s, background .15s, border-color .15s; }
+.chipbtn:hover { transform: translateY(-2px) rotate(-1deg); border-color: var(--cur); }
+.chipbtn[aria-pressed="true"] { background: var(--cur); color: var(--cur-fg); border-color: var(--cur); }
+
+/* wheel */
+svg.wheel { width: 100%; height: auto; display: block; max-width: 640px; margin: 0 auto; overflow: visible; }
+.p0 { --pc: var(--p0); --pf: var(--p0-fg); } .p1 { --pc: var(--p1); --pf: var(--p1-fg); } .p2 { --pc: var(--p2); --pf: var(--p2-fg); } .p3 { --pc: var(--p3); --pf: var(--p3-fg); } .p4 { --pc: var(--p4); --pf: var(--p4-fg); }
+.seg { cursor: pointer; transition: transform .28s cubic-bezier(.3,.8,.3,1); outline: none; animation: sweep .5s cubic-bezier(.3,.8,.3,1) backwards; animation-delay: calc(var(--i) * 55ms); }
+.seg path.shape { fill: color-mix(in srgb, var(--pc) 15%, var(--seg)); stroke: var(--bg); stroke-width: 3; transition: fill .2s; }
+.seg .t { fill: var(--ink); font: 600 10.2px var(--font-display); letter-spacing: .02em; text-anchor: middle; transition: fill .2s; }
+.seg .ic { fill: none; stroke: var(--ink); stroke-width: 2.7; stroke-linecap: round; stroke-linejoin: round; transform-origin: 24px 24px; transition: transform .3s cubic-bezier(.3,1.7,.5,1); }
+.seg .ic .f { fill: var(--pc); fill-opacity: .9; }
+.seg .ic .w { fill: var(--surface); }
+.seg .ic .s { fill: var(--ink); stroke: none; }
+.seg .n { fill: var(--muted); font: 600 11px var(--font-display); }
+.seg:hover path.shape { fill: color-mix(in srgb, var(--pc) 32%, var(--seg)); }
+.seg:hover .ic { transform: rotate(-9deg) scale(1.14); }
+.seg:focus-visible path.shape { stroke: var(--ink); stroke-width: 4; }
+.seg.on path.shape { fill: var(--pc); }
+.seg.on .t, .seg.on .n { fill: var(--pf); }
+.seg.on .ic { stroke: var(--pf); animation: wiggle .8s ease; }
+.seg.on .ic .f { fill: var(--pf); fill-opacity: .4; }
+.seg.on .ic .w { fill: var(--pc); }
+.seg.on .ic .s { fill: var(--pf); }
+.ptrack { fill: none; stroke: color-mix(in srgb, var(--pc) 30%, transparent); stroke-width: 4; stroke-linecap: round; }
+.pfill { fill: none; stroke: var(--pc); stroke-width: 4; stroke-linecap: round; transition: stroke-dasharray .4s; }
+.seg.on .ptrack { stroke: color-mix(in srgb, var(--pf) 30%, transparent); }
+.seg.on .pfill { stroke: var(--pf); }
+.badge { opacity: 0; transform: scale(.3); transform-box: fill-box; transform-origin: center; transition: opacity .25s, transform .35s cubic-bezier(.3,1.9,.5,1); }
+.badge circle { fill: var(--pc); }
+.badge path { fill: none; stroke: var(--pf); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.seg.done .badge { opacity: 1; transform: scale(1); }
+.seg.on .badge circle { fill: var(--pf); }
+.seg.on .badge path { stroke: var(--pc); }
+.phase { cursor: pointer; outline: none; }
+.phase path.shape { fill: color-mix(in srgb, var(--pc) 55%, var(--bg)); stroke: var(--bg); stroke-width: 3; transition: fill .25s; }
+.phase text { fill: var(--ink); font: 700 15px var(--font-display); letter-spacing: .1em; transition: fill .25s; }
+.phase.on path.shape { fill: var(--pc); }
+.phase.on text { fill: var(--pf); }
+.phase:hover path.shape { filter: brightness(.94); }
+.phase:focus-visible path.shape { stroke: var(--ink); stroke-width: 4; }
+.hub { fill: var(--hub); }
+.hubtrack { fill: none; stroke: color-mix(in srgb, var(--cur) 26%, var(--hub)); stroke-width: 7; }
+.hubprog { fill: none; stroke: var(--cur); stroke-width: 7; stroke-linecap: round; transition: stroke-dasharray .5s, stroke .3s; }
+.hub-t { fill: var(--hub-fg); font: 600 46px/1 var(--font-display); text-anchor: middle; }
+.hub-s { fill: var(--hub-fg); font: 600 12px var(--font-display); letter-spacing: .12em; text-anchor: middle; opacity: .85; }
+@keyframes sweep { from { opacity: 0; transform: scale(.94); } }
+@keyframes wiggle { 0% { transform: rotate(0) scale(1); } 22% { transform: rotate(-16deg) scale(1.22); } 48% { transform: rotate(13deg) scale(1.18); } 72% { transform: rotate(-6deg) scale(1.08); } 100% { transform: rotate(0) scale(1); } }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 14px; }
+.dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
+.dot { width: 15px; height: 15px; border-radius: 50%; border: 2px solid var(--pc); background: transparent; padding: 0; cursor: pointer; transition: transform .2s, background .2s; }
+.dot.done { background: var(--pc); }
+.dot.on { transform: scale(1.4); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pc) 30%, transparent); }
+
+/* workspace */
+.panel { background: var(--surface); border: 1px solid color-mix(in srgb, var(--cur) 45%, var(--line)); border-radius: 12px; padding: 24px 24px 20px; min-width: 0; }
+.panel.swap { animation: swap .35s ease; }
+@keyframes swap { from { opacity: 0; transform: translateY(8px); } }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.chip { font: 600 11.5px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; padding: 7px 10px; border-radius: 4px; background: var(--cur); color: var(--cur-fg); }
+.chip.alt { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.panel h2 { font: 700 clamp(24px, 3.2vw, 31px)/1.12 var(--font-display); margin: 0 0 10px; text-wrap: balance; }
+.summary { margin: 0 0 18px; font-size: 16.5px; line-height: 1.6; max-width: 62ch; color: var(--muted); }
+details.sec { border-top: 1px solid var(--line); padding: 4px 0; }
+details.sec > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 12px 0; font: 600 15px/1.2 var(--font-display); }
+details.sec > summary::-webkit-details-marker { display: none; }
+details.sec > summary::before { content: ""; width: 9px; height: 9px; border-right: 2.5px solid var(--cur); border-bottom: 2.5px solid var(--cur); transform: rotate(-45deg); transition: transform .2s; margin-left: 3px; }
+details.sec[open] > summary::before { transform: rotate(45deg); }
+details.sec > summary:focus-visible { outline: 2px solid var(--cur); outline-offset: 2px; }
+.secbody { display: grid; gap: 16px; padding: 4px 0 18px; }
+.fld { display: grid; gap: 7px; }
+.fld > label, .lbl { font: 600 13.5px/1.35 var(--font-display); }
+textarea, input[type="text"], input[type="date"], input[type="time"] { width: 100%; font: 400 16px/1.5 var(--font-body); color: var(--ink); background: var(--field); border: 1.5px solid var(--line); border-radius: 8px; padding: 10px 12px; box-sizing: border-box; transition: border-color .15s; }
+textarea { min-height: 88px; resize: vertical; field-sizing: content; max-height: 70vh; }
+textarea.tall { min-height: 220px; }
+textarea:focus, input:focus { outline: none; border-color: var(--cur); box-shadow: 0 0 0 3px color-mix(in srgb, var(--cur) 22%, transparent); }
+.callout { background: color-mix(in srgb, var(--cur) 10%, var(--surface)); border-radius: 8px; padding: 12px 14px; font-size: 15px; line-height: 1.55; }
+.callout b { font-family: var(--font-display); font-weight: 600; }
+.checks { display: grid; gap: 8px; }
+.ck { display: flex; gap: 11px; align-items: flex-start; cursor: pointer; font-size: 15.5px; line-height: 1.45; }
+.ck input { appearance: none; flex: none; width: 22px; height: 22px; margin: 1px 0 0; border: 2px solid var(--line); border-radius: 7px; background: var(--field); cursor: pointer; display: grid; place-content: center; transition: background .15s, border-color .15s, transform .2s; }
+.ck input:checked { background: var(--cur); border-color: var(--cur); animation: pop .35s ease; }
+.ck input:checked::after { content: ""; width: 6px; height: 11px; border-right: 2.5px solid var(--cur-fg); border-bottom: 2.5px solid var(--cur-fg); transform: translateY(-1px) rotate(40deg); }
+.ck input:focus-visible { outline: 2px solid var(--cur); outline-offset: 2px; }
+.ck.struck span { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--cur) 60%, transparent); }
+@keyframes pop { 40% { transform: scale(1.35) rotate(-8deg); } }
+.row { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: center; }
+.num { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 600 12px var(--font-display); background: var(--field); color: var(--muted); transition: background .2s, color .2s; }
+.num.on { background: var(--cur); color: var(--cur-fg); }
+.num svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; }
+.num.heart.on svg { fill: currentColor; animation: pop .4s ease; }
+.meta { font: 500 12.5px var(--font-display); color: var(--muted); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.sched { display: grid; grid-template-columns: 28px minmax(0, 1.1fr) minmax(0, .8fr) minmax(0, 1.4fr); gap: 8px; align-items: center; }
+@media (max-width: 560px) { .sched { grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr); } .sched input:nth-of-type(3) { grid-column: 2 / 4; } }
+.chipset { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* deck */
+.deck { display: grid; gap: 12px; }
+.deckhead { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { font: 600 12px/1 var(--font-display); background: transparent; border: 1.5px solid var(--line); border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+.tab.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.qcard { border: 1.5px solid var(--line); border-radius: 10px; background: var(--field); overflow: hidden; transition: border-color .2s, transform .2s; }
+.qcard.picked { border-color: var(--cur); background: color-mix(in srgb, var(--cur) 8%, var(--surface)); }
+.qpick { width: 100%; text-align: left; background: none; border: 0; padding: 13px 14px; font: 500 15.5px/1.45 var(--font-body); cursor: pointer; display: flex; gap: 12px; align-items: flex-start; }
+.qpick::before { content: "+"; flex: none; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font: 600 16px/1 var(--font-display); transition: transform .25s, background .2s; }
+.qcard:not(.picked):hover { transform: translateY(-2px); }
+.qcard.picked .qpick::before { content: "\2713"; background: var(--cur); color: var(--cur-fg); border-color: var(--cur); transform: rotate(360deg); font-size: 13px; }
+.qans { padding: 0 14px 14px; }
+.spark { background: var(--field); border-radius: 10px; padding: 14px; display: grid; gap: 12px; }
+.sparkq { font: 500 19px/1.4 var(--font-body); font-style: italic; min-height: 3.2em; }
+.sparkq.swapq { animation: swap .3s ease; }
+
+/* mind map, timeline, board */
+.mm svg, .tl svg { width: 100%; height: auto; display: block; }
+.mmnode { cursor: pointer; }
+.mmnode circle { transition: r .2s; }
+.mmnode:hover circle { r: 27; }
+.tlnode { cursor: pointer; outline: none; }
+.tlnode:focus-visible circle { stroke: var(--ink); stroke-width: 3; }
+.board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 560px) { .board { grid-template-columns: minmax(0, 1fr); } }
+.col { background: var(--field); border-radius: 10px; padding: 10px; min-height: 110px; display: grid; gap: 8px; align-content: start; }
+.col h4 { margin: 0; font: 600 12px/1.2 var(--font-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; display: grid; gap: 6px; animation: swap .25s ease; }
+.card b { font: 600 14px/1.3 var(--font-display); overflow-wrap: anywhere; }
+.card span { font-size: 13.5px; color: var(--muted); overflow-wrap: anywhere; }
+.card .acts { display: flex; gap: 4px; }
+.mini { font: 600 11px/1 var(--font-display); border: 1px solid var(--line); background: transparent; border-radius: 5px; padding: 6px 8px; cursor: pointer; }
+.mini:hover { border-color: var(--cur); }
+.meter { height: 10px; border-radius: 999px; background: var(--field); overflow: hidden; position: relative; }
+.meter i { position: absolute; inset: 0 auto 0 0; background: var(--cur); border-radius: 999px; transition: width .35s; }
+.addrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; }
+@media (max-width: 560px) { .addrow { grid-template-columns: minmax(0, 1fr); } }
+.letter { white-space: pre-wrap; background: var(--field); border: 1.5px dashed var(--line); border-radius: 10px; padding: 16px; font-size: 16px; line-height: 1.6; max-height: 420px; overflow: auto; }
+.foot { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); margin-top: 6px; padding-top: 16px; }
+.stampbtn.done { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.55; max-width: 84ch; }
+
+/* modal, toast, confetti */
+.modal[hidden] { display: none; }
+.modal { position: fixed; inset: 0; z-index: 50; background: rgba(10,10,16,.55); display: grid; place-items: center; padding: 16px; }
+.sheet { background: var(--surface); color: var(--ink); width: min(680px, 100%); max-height: calc(100vh - 32px); overflow: auto; border-radius: 14px; padding: 22px; box-sizing: border-box; animation: swap .25s ease; }
+.sheet header { margin: 0 0 14px; align-items: center; flex-wrap: nowrap; }
+.sheet h3 { font: 700 22px/1.2 var(--font-display); margin: 0; }
+.pace { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 520px) { .pace { grid-template-columns: minmax(0, 1fr); } }
+.pcard { text-align: left; border: 0; border-radius: 12px; padding: 16px; min-height: 124px; cursor: pointer; background: var(--pc); color: var(--pf); font: 400 15px/1.5 var(--font-body); transition: transform .25s; }
+.pcard:hover { transform: rotate(-1.5deg) scale(1.02); }
+.pcard b { font: 700 17px/1.2 var(--font-display); display: block; }
+.pcard small { font: 600 11px var(--font-display); letter-spacing: .1em; opacity: .8; display: block; margin-top: 10px; }
+.logitem { display: grid; gap: 4px; border-top: 1px solid var(--line); padding: 10px 0; }
+.logitem .meta b { color: var(--ink); }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 30px); background: var(--ink); color: var(--surface); font: 600 14px var(--font-display); padding: 12px 18px; border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 60; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.conf { position: fixed; width: 9px; height: 13px; border-radius: 2px; z-index: 70; pointer-events: none; animation: burst .95s cubic-bezier(.2,.8,.3,1) forwards; }
+@keyframes burst { to { transform: translate(var(--dx), var(--dy)) rotate(var(--r)); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .seg, .seg .ic, .seg.on .ic, .panel.swap, .sheet, .card, .conf, .chipbtn, .qcard, .ck input { animation: none !important; transition: none !important; }
+  .seg:hover .ic { transform: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header>
+    <div>
+      <p class="eyebrow">Twelve steps, five phases</p>
+      <h1>The Annual Review</h1>
+      <p class="lede">Click a step on the wheel to open its workspace. Your answers save as you type, and the wheel fills in as you go.</p>
+    </div>
+    <div class="tools">
+      <button class="ctl small" id="bPace" type="button">PACE principles</button>
+      <button class="ctl small" id="bLog" type="button">Resonance log</button>
+      <button class="ctl small" id="bVer" type="button">Versions</button>
+      <button class="ctl small" id="bExport" type="button">Export</button>
+      <span class="save" id="saveState" role="status">Loading</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="wheel-wrap" aria-label="Annual review wheel">
+      <svg class="wheel" id="wheel" viewBox="0 0 720 720" role="group" aria-label="The Annual Review wheel with twelve steps"></svg>
+      <div class="dots" id="dots" aria-label="Jump to step"></div>
+      <div class="controls">
+        <button class="ctl" id="prev" type="button">Previous</button>
+        <button class="ctl primary" id="nextTodo" type="button">Next unfinished</button>
+        <button class="ctl" id="next" type="button">Next</button>
+      </div>
+    </section>
+    <section class="panel" id="panel" aria-live="polite"></section>
+  </div>
+
+  <footer>
+    The wheel and its steps come from Tiago Forte's <a href="https://www.porchlightbooks.com/products/life-in-perspective-tiago-forte-9781668079973" target="_blank" rel="noopener">Life in Perspective</a> and its Annual Life Review Template. The prompts here are shortened and reworded from that template for your own personal review, so keep this page private. The book has the full method.
+  </footer>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <header><h3 id="modalTitle"></h3><button class="ctl small" id="modalClose" type="button">Close</button></header>
+    <div id="modalBody"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function () {
+  "use strict";
+  var CX = 360, CY = 360, NS = "http://www.w3.org/2000/svg";
+
+  /* ---------- content ---------- */
+  var phases = [
+    { name: "Prepare", a0: 0, a1: 30, time: "", note: "Get your tools, time and mindset ready before you look at the year." },
+    { name: "Appreciate the Past", a0: 30, a1: 120, time: "3 to 4 hours", note: "Look back with kindness first. The question is what the year was trying to teach you." },
+    { name: "Reflect on the Present", a0: 120, a1: 210, time: "2 to 3 hours", note: "Tune in to how life feels right now. Do not try to solve anything yet." },
+    { name: "Create the Future", a0: 210, a1: 330, time: "3 to 4 hours", note: "Imagine the life you want, work backwards from it, and turn it into projects and a letter." },
+    { name: "Complete", a0: 330, a1: 360, time: "", note: "Keep the vision alive through the year, because most plans fade after about three weeks." }
+  ];
+  var icons = {
+    "toolbox": '<path class="f" d="M8 22h32v16a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z"/><path d="M17 22v-4a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v4M8 30h32"/><rect class="w" x="21" y="26" width="6" height="7" rx="2"/><path class="s" d="M39 4l1.6 3.6L44 9l-3.4 1.4L39 14l-1.6-3.6L34 9l3.4-1.4z"/>',
+    "pages": '<rect class="f" x="8" y="10" width="24" height="30" rx="3" transform="rotate(-10 20 25)"/><rect class="w" x="15" y="7" width="24" height="31" rx="3"/><path d="M21 16h12M21 22h12M21 28h7"/><circle class="s" cx="39" cy="40" r="2.4"/>',
+    "list": '<path class="f" d="M24 42C9 32 5 23 9 15c3-5 11-5 15 1 4-6 12-6 15-1 4 8 0 17-15 27z"/><path d="M17 23l5 5 9-10"/><path class="s" d="M40 5l1.3 2.9L44 9l-2.7 1.1L40 13l-1.3-2.9L36 9l2.7-1.1z"/>',
+    "mirror-bar": '<rect class="f" x="4" y="18" width="40" height="17" rx="8.5"/><path d="M24 18v-9M16 9h16M12 27h6M21 27h3"/><path class="s" d="M38 5l1.3 2.9L42 9l-2.7 1.1L38 13l-1.3-2.9L34 9l2.7-1.1z"/>',
+    "notebook": '<rect class="f" x="11" y="5" width="26" height="37" rx="4" transform="rotate(5 24 24)"/><path d="M18 8l1.5 31M25 17l8 .9M24.5 23l5.5.6"/><path class="s" d="M5 12l1.3 2.9L9 16l-2.7 1.1L5 20l-1.3-2.9L1 16l2.7-1.1z"/>',
+    "map": '<path d="M24 24L24 9M24 24L24 39M24 24L9 17M24 24L39 17M24 24L9 31M24 24L39 31"/><circle class="w" cx="24" cy="8" r="4"/><circle class="w" cx="24" cy="40" r="4"/><circle class="w" cx="8" cy="17" r="4"/><circle class="w" cx="40" cy="17" r="4"/><circle class="w" cx="8" cy="31" r="4"/><circle class="w" cx="40" cy="31" r="4"/><circle class="f" cx="24" cy="24" r="8"/><path class="s" d="M24 20l1.2 2.8L28 24l-2.8 1.2L24 28l-1.2-2.8L20 24l2.8-1.2z"/>',
+    "oval": '<ellipse class="f" cx="24" cy="27" rx="12" ry="15"/><path d="M17 34l9-13M24 12V8"/><circle class="w" cx="24" cy="6" r="3"/><path class="s" d="M38 20l1.2 2.7L42 24l-2.8 1.3L38 28l-1.2-2.7L34 24l2.8-1.3z"/>',
+    "quill": '<path class="f" d="M40 5C23 7 12 19 11 37c10 0 25-5 29-32z"/><path d="M11 40L27 22M12 44c5-3 8 1 13-1s8 1 11-1"/>',
+    "bowtie": '<path class="f" d="M4 10l19 14L4 38z"/><path d="M44 10L25 24l19 14z"/><circle class="w" cx="24" cy="24" r="4.2"/>',
+    "checks": '<rect class="w" x="3" y="15" width="12" height="12" rx="3"/><rect class="f" x="18" y="15" width="12" height="12" rx="3"/><rect class="w" x="33" y="15" width="12" height="12" rx="3"/><path d="M20.5 21l3.2 3.3 6.3-8.3"/><path class="s" d="M38 5l1.3 2.9L42 9l-2.7 1.1L38 13l-1.3-2.9L34 9l2.7-1.1z"/>',
+    "envelope": '<rect class="f" x="5" y="14" width="38" height="25" rx="4"/><path d="M5 18l19 14 19-14"/><path class="s" d="M38 4c2-3 6 0 4 3l-4 4-4-4c-2-3 2-6 4-3z"/>',
+    "table": '<rect class="f" x="6" y="18" width="36" height="7" rx="3"/><path d="M11 25v15M37 25v15M11 33h26"/><path class="w" d="M19 18v-4a5 5 0 0 1 10 0v4z"/>'
+  };
+
+  var SPARK_PAST = [
+    { t: "People", qs: ["Who showed up for you this year, even in small ways?", "Who did you get to show up for?", "Whose generosity or kindness surprised you?"] },
+    { t: "What you made", qs: ["What did you build or create?", "Who did your work help?", "Which recognition or collaboration came your way?"] },
+    { t: "Experiences", qs: ["Where did you travel or explore, even close to home?", "Which book, show or concert changed how you think?", "What luck or serendipity worked in your favor?"] },
+    { t: "Daily rhythms", qs: ["What improved or held steady in your health?", "What got better about where you live or work?", "Which small daily pleasures kept you going?"] },
+    { t: "Fears and stability", qs: ["Which fears did you move through?", "What gave you more security or stability?", "What did you start that you are proud of, even unfinished?"] }
+  ];
+  var SPARK_FUTURE = [
+    { t: "World and rhythms", qs: ["Where do you live, and what do home and neighborhood feel like?", "What does your morning look like, and who is there?", "How are your days structured, and what boundaries protect them?", "How do you wind down in the evening?"] },
+    { t: "Purpose", qs: ["What do you do with your most active hours?", "What does that setting look like, and which skills do you use?", "What is the bigger purpose, and how does it feel to serve it?"] },
+    { t: "People", qs: ["Who do you work or create with?", "Who do you serve, and what changes for them?", "How are your family and closest friends doing?", "Which communities are you part of?"] },
+    { t: "Health and vitality", qs: ["How are your food, movement, sleep and mental health?", "How do money and resources flow to and through you?", "How are you learning and growing?"] }
+  ];
+  var DECK_PAST = [
+    { t: "Give yourself credit", qs: ["What were your three biggest wins this year?", "Which new skills or capacities did you develop?", "When did you feel most alive, and what was happening around you?"] },
+    { t: "Hard parts", qs: ["Which risks did you take, and how did they turn out?", "What was most challenging, and what felt effortless?", "What are your biggest disappointments or regrets? What did you avoid out of fear?"] },
+    { t: "Letting go", qs: ["What have you let go of, and how did your life change?", "Is anything ready to be finished, archived, paused or stopped?", "Which old goals no longer fit you?"] },
+    { t: "Others", qs: ["Which hard truths did you tell in service of someone else?", "What compliment would you have liked to receive, or to give?"] },
+    { t: "Learning", qs: ["When did you feel most connected to your sense of purpose?", "How would you describe the year in one phrase?", "Which beliefs, values or priorities changed, and which grew stronger?", "What were the biggest lessons?"] }
+  ];
+  var DECK_PRESENT = [
+    { t: "Right now", qs: ["What is consuming your attention, and what do you want to focus on instead?", "Where are your growth edges, just outside your comfort zone?", "Where do you feel most alive, and what drains you?"] },
+    { t: "Relationships", qs: ["What is unsaid to the people in your life? Where is resentment building?", "Where do you belong, and where don't you?", "Which relationships give you energy, and which take it?"] },
+    { t: "Alignment", qs: ["What do you value but do not act on?", "Where do who you are and what you do pull apart?", "What are you pursuing that feels imposed rather than chosen?"] },
+    { t: "Well-being", qs: ["How is your relationship to self-care, and how would you like it to be?", "Where does your body hold tension, and what might it be saying?", "What would you tell a friend in your exact situation?"] },
+    { t: "Bandwidth", qs: ["Which strengths are you not fully using?", "Which constraints shape your choices the most?", "What inner knowing are you sensing but not acting on yet?"] }
+  ];
+  var DECK_FUTURE = [
+    { t: "Becoming", qs: ["Where have you not yet accepted yourself, and where do you still want to grow?", "Which undeveloped talent are you ready to explore this year?", "How would you show up at work if you truly believed you were world-class?"] },
+    { t: "Fears", qs: ["What are you afraid to do, and what would life be like without that fear?", "Where do you choose comfort when discomfort is needed?", "What will be your biggest risk next year?", "What would you do if you knew you could not fail?"] },
+    { t: "Natural energy", qs: ["How do you want to feel at the end of a workday?", "What brings you the most joy, and how could you do more of it?", "What are your criteria for saying yes, and for saying no?"] },
+    { t: "Deeper why", qs: ["Which word or open question will be your theme this year?", "If your life were a memoir, which chapter would make it a great story?", "What do you see about the future that others do not?"] }
+  ];
+  var DECK_SCAN = [{ t: "As you scan", qs: ["Which events or experiences stand out as significant?", "Which people were most influential?", "How did last year's goals turn out, and do you want another pass at any?", "Where did you excel, and where did you fall short?", "Which creative work are you proudest of?", "Which books, shows or ideas are you still thinking about?"] }];
+  var AREAS = ["Your creative life", "Your body", "Your deepest relationships", "Failure and setbacks", "Wealth and status", "Ending relationships that are not working", "Lifelong commitments", "How you appear in public", "What your life is ultimately about"];
+  var BACKCAST_Q = ["Which habits and routines are in place by now?", "Which decisions or changes have you made?", "Which skills have you started building, and what did you stop doing to make room?", "Who have you brought closer: peers, mentors, guides?", "What impact have you already had, and what have you learned?"];
+
+  var STEPS = [
+    { t: "Tools + Mindset", ph: 0, ic: "toolbox", l: ["TOOLS +", "MINDSET"],
+      s: "Set your intention, protect your time, pick a place, build a soundtrack and gather your materials. Even partial preparation beats none.",
+      secs: [
+        { t: "Set your intention", b: [
+          { kind: "prompt", k: "feel", q: "What is your emotional state right now?" },
+          { kind: "prompt", k: "area", q: "Which area of life or work most needs your attention?" },
+          { kind: "prompt", k: "clar", q: "Where do you most want clarity or freedom?" },
+          { kind: "text", k: "touch", q: "One phrase that captures what you are seeking (your touchstone)" },
+          { kind: "prompt", k: "int", q: "My intention for this review", rows: 3 },
+          { kind: "check", k: "intc", items: ["Write your intention where you will see it", "Gut-check it: if it sounds like a social media post, look for the simpler, more vulnerable need underneath"] }
+        ] },
+        { t: "Protect your time", b: [
+          { kind: "info", body: "<b>About 8 hours in total.</b> Take one full day, two half days, or an hour each evening for a week." },
+          { kind: "sched", k: "sched", n: 5 },
+          { kind: "check", k: "timec", items: ["Tell family or housemates your plans", "Arrange childcare if you need it"] }
+        ] },
+        { t: "Choose your space", b: [
+          { kind: "info", body: "Pick a place outside your normal workspace that matches the feeling you want: a park, a beach, a library, a café, a neighborhood you have never visited." },
+          { kind: "text", k: "feelwant", q: "The feeling I want to reach" },
+          { kind: "text", k: "where", q: "Where I will do my review" },
+          { kind: "check", k: "spacec", items: ["Include nature if you can, outdoors or by a window", "At home: set up a dedicated review zone", "Body check: sit there and notice whether you can settle in"] }
+        ] },
+        { t: "Create your soundtrack", b: [
+          { kind: "pick", k: "music", q: "How will you get your music?", opts: ["Year-end summary (Wrapped, Replay)", "Songs that defined my year", "A ready-made reflection playlist"] },
+          { kind: "list", k: "songs", q: "Songs that defined my year", n: 5, target: 3, ph: "Song and artist" }
+        ] },
+        { t: "Gather your materials", b: [
+          { kind: "check", k: "tools", q: "Essential tools", items: ["Paper notebook or journal", "A pen you enjoy writing with", "Large pad of paper", "Music player and headphones", "Charged computer or tablet"] },
+          { kind: "check", k: "raw", q: "Raw material", items: ["Last year's calendar", "Photos from your phone or camera", "Journal entries and notes", "Quotes, bookmarks and reading highlights", "Last year's goals and intentions", "Material from finished projects", "Art, media and content that resonated"] },
+          { kind: "check", k: "extras", q: "Optional extras", items: ["Meaningful objects from your year", "A blanket, flowers, candles or incense", "Post-its, index cards or a wall poster"] }
+        ] },
+        { t: "Find a review buddy", b: [
+          { kind: "text", k: "buddy", q: "Someone to do their review alongside me" },
+          { kind: "check", k: "final", items: ["Pack your materials if you are traveling", "Dress warmly if you will be outdoors", "Keep the book handy to mark passages"] },
+          { kind: "pacebtn" }
+        ] }
+      ] },
+    { t: "Review Material", ph: 1, ic: "pages", l: ["REVIEW", "MATERIAL"],
+      s: "Scan the year like a curator, looking for highlights and low points. You do not need to read everything.",
+      secs: [
+        { t: "What to look through", b: [
+          { kind: "check", k: "scan", items: ["Calendar, a week or a month at a time", "Photos, starting with your favorites", "Journal entries and notes", "Reading highlights, bookmarks and saved quotes", "Last year's goals and finished projects", "Books, podcasts, films and videos that shaped you"] }
+        ] },
+        { t: "Questions to ask as you go", b: [
+          { kind: "deck", k: "deck", groups: DECK_SCAN },
+          { kind: "prompt", k: "stood", q: "What stood out", rows: 4 },
+          { kind: "logbtn" }
+        ] }
+      ] },
+    { t: "Gratitude List", ph: 1, ic: "list", l: ["GRATITUDE", "LIST"],
+      s: "List everything that sparks even a hint of gratitude. Go for quantity and be specific, then say why.",
+      secs: [
+        { t: "Spark your memory", b: [
+          { kind: "info", body: "Not “good health” but “my cholesterol dropped fifteen points.” If you draw a blank, zoom in on tiny details: one good meal, one good talk, “I did not give up.”" },
+          { kind: "spark", groups: SPARK_PAST }
+        ] },
+        { t: "My gratitude list", open: true, b: [
+          { kind: "list", k: "grat", n: 10, target: 20, ph: "I am grateful for...", heart: true },
+          { kind: "prompt", k: "thank", q: "Someone on my list I will reach out to and thank" },
+          { kind: "prompt", k: "relg", q: "What I notice about my relationship to gratitude" }
+        ] }
+      ] },
+    { t: "Reflect on the Past", ph: 1, ic: "mirror-bar", l: ["REFLECT ON", "THE PAST"],
+      s: "The gratitude list captured what happened. Now explore what it means. Pick the questions that stir something and skip the rest.",
+      secs: [
+        { t: "Pick 5 to 7 questions", open: true, b: [{ kind: "deck", k: "deck", groups: DECK_PAST }] },
+        { t: "Before you move on", b: [
+          { kind: "check", k: "move", items: ["Reread your answers and highlight what resonates", "Copy anything worth exploring into your resonance log", "If hard feelings came up, ask what they are trying to tell you, and talk with someone you trust"] },
+          { kind: "prompt", k: "light", q: "What felt light, and what felt heavy?" },
+          { kind: "logbtn" }
+        ] },
+        { t: "Bonus: keep your year", b: [
+          { kind: "info", body: "Make something you will want to revisit: a collage, a photo book, a painting, a recorded interview with an elder, a video highlight reel." },
+          { kind: "prompt", k: "creative", q: "My creative project" }
+        ] }
+      ] },
+    { t: "Dissatisfaction Journaling", ph: 2, ic: "notebook", l: ["DISSATISFACTION", "JOURNALING"],
+      s: "The opposite of a gratitude list. Complain freely about one area of life, then look for the root cause.",
+      secs: [
+        { t: "Describe the symptoms", b: [
+          { kind: "info", body: "Describe it like you would to a doctor: precisely, without guessing the cause or blaming yourself. What is wrong, what is missing, what feels unfair?" },
+          { kind: "text", k: "area", q: "Area of life" },
+          { kind: "prompt", k: "sym", q: "Which parts of this area feel dissatisfying?", rows: 5 }
+        ] },
+        { t: "Look for the root cause", b: [
+          { kind: "prompt", k: "root", q: "What do these symptoms have in common? Which habit of thinking, feeling or deciding drives them?", rows: 4 },
+          { kind: "prompt", k: "begin", q: "What might it look like to begin addressing it?" },
+          { kind: "info", body: "Do not jump to solutions yet. Save this for the future-facing stage." }
+        ] }
+      ] },
+    { t: "Excitement Map", ph: 2, ic: "map", l: ["EXCITEMENT", "MAP"],
+      s: "Map what excites you right now. If you are burned out, look for even the faintest flicker of curiosity.",
+      secs: [
+        { t: "Build your map", open: true, b: [
+          { kind: "info", body: "Start from “life” and branch out to every topic that excites you. For each one, note why: which aspect or what form? Stuck? Think of what you read, what makes you lose track of time, what you would do with no obligations." },
+          { kind: "mindmap", k: "map" }
+        ] },
+        { t: "Find the patterns", b: [{ kind: "prompt", k: "pat", q: "Which themes keep showing up?", rows: 4 }] }
+      ] },
+    { t: "Reflect on the Present", ph: 2, ic: "oval", l: ["REFLECT ON", "THE PRESENT"],
+      s: "Take stock of where you are right now. Notice what opens you up and what closes you down.",
+      secs: [
+        { t: "Tune in", b: [
+          { kind: "check", k: "tune", items: ["Set your notes from the past aside for now", "Notice how your body responds", "Play music, put your phone away, reread your intention"] },
+          { kind: "info", body: "<b>Three lenses.</b> Notice what gives you energy and what takes it away. Compare yourself to others, because jealousy points at what you want. Listen for the internal “no” where you are pulling away or performing." },
+          { kind: "prompt", k: "revisit", q: "Does my intention mean anything new now?" }
+        ] },
+        { t: "Pick 5 to 7 questions", open: true, b: [{ kind: "deck", k: "deck", groups: DECK_PRESENT }] },
+        { t: "Before you move on", b: [
+          { kind: "info", body: "<b>Do not act on any of this yet.</b> You may have found something powerful. Sit with it a little longer. The action will be better for having waited." },
+          { kind: "check", k: "care", q: "Take extra care of yourself", items: ["Simpler, lighter meals", "Yoga, stretching or meditation", "More sleep and rest", "Less social media, news, TV and alcohol", "Small pleasures: good coffee, a long bath, sun"] },
+          { kind: "prompt", k: "moved", q: "What moved me most in this stage?" },
+          { kind: "logbtn" }
+        ] }
+      ] },
+    { t: "Write Future Self-Portrait", ph: 3, ic: "quill", l: ["WRITE FUTURE", "SELF-PORTRAIT"],
+      s: "Write a vivid, present-tense scene of your future life, as if you were the main character of a film. It is a first draft, not a promise.",
+      secs: [
+        { t: "Warm up: pick 5 to 7 questions", b: [{ kind: "deck", k: "deck", groups: DECK_FUTURE }, { kind: "text", k: "word", q: "My word for the year" }, { kind: "prompt", k: "oq", q: "My open question for the year" }] },
+        { t: "Set the time horizon", open: true, b: [
+          { kind: "pick", k: "hor", q: "How far ahead?", opts: ["1 to 3 years (first time)", "3 to 5 years", "5 to 10 years or more"] },
+          { kind: "text", k: "hordate", q: "The date I am imagining" },
+          { kind: "prompt", k: "focus", q: "Which area of life do I most want to change? (Your dissatisfaction journaling can help.)" },
+          { kind: "prompt", k: "fromlog", q: "Notes from my resonance log to draw on" }
+        ] },
+        { t: "Write the portrait", open: true, b: [
+          { kind: "info", body: "Write as if it is already true. Include senses and feelings. Do not limit yourself to what feels achievable. A few paragraphs is plenty. If you draw a blank, ask what your wisest friend would imagine for you, and what you dreamed about before you grew realistic." },
+          { kind: "spark", groups: SPARK_FUTURE },
+          { kind: "prompt", k: "portrait", q: "My future self-portrait", tall: true }
+        ] },
+        { t: "Let it simmer", b: [
+          { kind: "prompt", k: "simmer", q: "After a day or two: hopes, fears, feelings or doubts that came up" },
+          { kind: "prompt", k: "visit", q: "Places I could visit that feel like my future life" }
+        ] }
+      ] },
+    { t: "Backcast to the Present", ph: 3, ic: "bowtie", l: ["BACKCAST TO", "THE PRESENT"],
+      s: "Rewind your portrait to today, step by step, so the vision turns into concrete stepping stones.",
+      secs: [
+        { t: "Walk the timeline backwards", open: true, b: [{ kind: "timeline", k: "tl", nodes: [
+          { id: "half", label: "Halfway", n: 1, hint: "Picture yourself halfway to your horizon. For a five-year portrait that is about two and a half years from now.", qs: BACKCAST_Q },
+          { id: "quarter", label: "Quarter", n: 2, hint: "Rewind again, to halfway between the halfway mark and today. Use the same prompts to find the stepping stones.", qs: BACKCAST_Q },
+          { id: "now", label: "Today", n: 3, hint: "Back to the present. Answer three to five of these.", qs: ["What part of this future could you start living today?", "Which tensions do you need to resolve before setting off?", "What surprised you, and which desires showed up that you had not admitted?", "Where do you feel most alive, and where is the most resistance?", "Who could support you, and which early win would build momentum?", "How will you know you are on track, and when will you check?"] }
+        ] }, { kind: "logbtn" }] }
+      ] },
+    { t: "Choose Projects", ph: 3, ic: "checks", l: ["CHOOSE", "PROJECTS"],
+      s: "A project turns a vague wish into something concrete. “Finish a 30-day walking challenge” is a project. “Health” is not.",
+      secs: [
+        { t: "Sort your projects", open: true, b: [
+          { kind: "info", body: "List what is already on your plate, then prune from the bottom. <b>No longer aligned:</b> cancel, pause or postpone. <b>Stretched:</b> shrink it, set a deadline or hand it off. <b>Want it, but not now:</b> someday/maybe. Then add new ideas from your portrait, backcast, gratitude list and excitement map." },
+          { kind: "board", k: "board" }
+        ] },
+        { t: "Gut-check with your body", b: [{ kind: "signs", k: "signs" }] }
+      ] },
+    { t: "Write Annual Letter", ph: 3, ic: "envelope", l: ["WRITE ANNUAL", "LETTER"],
+      s: "Distill your review into a letter to your future self that you could read in 15 minutes and be taken right back. You already have most of the material.",
+      secs: [
+        { t: "The five parts", open: true, b: [
+          { kind: "prompt", k: "been", q: "Where you have been: what happened, what surprised you, what you are most grateful for", rows: 4 },
+          { kind: "prompt", k: "letgo", q: "What you are letting go of: a habit, belief, project or old version of yourself", rows: 3 },
+          { kind: "prompt", k: "stand", q: "Where you stand: what matters now, where you feel at peace, what is unresolved", rows: 4 },
+          { kind: "prompt", k: "headed", q: "Where you are headed: your vision and projects, and why they matter", rows: 4 }
+        ] },
+        { t: "Operating principles", b: [
+          { kind: "info", body: "A principle has no deadline. It describes how you want to move through the world. Pick three to five areas that pull at you and write one sentence for each. If one sounds like a motivational poster, dig deeper." },
+          { kind: "principles", k: "prin" }
+        ] },
+        { t: "Four closing questions", b: [
+          { kind: "prompt", k: "c1", q: "How did you fulfill your intention for this review?" },
+          { kind: "prompt", k: "c2", q: "What results did you get?" },
+          { kind: "prompt", k: "c3", q: "Which decisions or changes have you already made?" },
+          { kind: "prompt", k: "c4", q: "How has your perspective shifted?" }
+        ] },
+        { t: "Put the letter together", open: true, b: [{ kind: "assemble", parts: [["Where I have been", "been"], ["What I am letting go of", "letgo"], ["Where I stand", "stand"], ["Where I am headed", "headed"], ["How I intend to live", "@prin"], ["Looking back at this review", "@close"]] }] }
+      ] },
+    { t: "Set Support Structures", ph: 4, ic: "table", l: ["SET SUPPORT", "STRUCTURES"],
+      s: "About three weeks after a review, many people hit a wall and the vision fades. These four supports keep it going.",
+      secs: [
+        { t: "Close the ritual", b: [
+          { kind: "pick", k: "gest", q: "How will I mark the end of my review?", multi: true, opts: ["Burn what I am letting go of", "Walk somewhere inspiring", "Sit in silence with a candle", "Toast the year", "Read my letter aloud"] },
+          { kind: "prompt", k: "lg", q: "What I am letting go of" },
+          { kind: "text", k: "keep", q: "Where I will keep my letter" }
+        ] },
+        { t: "1. Share your review", b: [{ kind: "prompt", k: "share", q: "Who I will share my review or letter with, and how" }] },
+        { t: "2. Check in during the year", b: [
+          { kind: "dates", k: "dates", rows: ["Mid-year check-in", "Quarterly check-in (first one)", "Monthly check-in (first one)"] },
+          { kind: "info", body: "<b>Mid-year:</b> reread your portrait. What have you learned, which assumptions held, what do you want to emphasize before the year ends? <b>Monthly:</b> update your project list. Which are on track, which are unexpectedly easy or hard, what do you cancel, add or reallocate?" }
+        ] },
+        { t: "3. Form an accountability group", b: [
+          { kind: "pick", k: "group", q: "A format that fits me", multi: true, opts: ["Mastermind", "Dinner club", "Walking group", "Book club", "Review pod every 1 to 3 months"] },
+          { kind: "prompt", k: "invite", q: "People I will invite" }
+        ] },
+        { t: "4. Document your life", b: [{ kind: "check", k: "doc", items: ["Favorite meaningful photos as you take them", "Save quotes and ideas in a notes app", "Keep your resonance log going all year", "Like the videos and songs that move you"] }] }
+      ] }
+  ];
+  var TAGS = [["Surprise", "That is not what I expected"], ["Interest", "I want to know more"], ["Confusion", "This does not make sense"], ["Awe", "This changes how I see things"]];
+  var SIGNS = ["Quickening of breath", "Warmth in face or chest", "Tingling on the back of the neck", "Goosebumps along the arms", "A catch in the throat", "Tears from nowhere"];
+  var PACE = [
+    ["Pleasure over sacrifice", "The review should be fun. If you dread a part, you have drifted off track. If writing feels like pulling teeth, record a voice memo on a walk."],
+    ["Appreciation over criticism", "Ask what went surprisingly well, not why you failed. In a war with yourself you always lose."],
+    ["Concrete over abstract", "Make it physical: real paper, meaningful objects, time in nature. To let something go, burn it or tear it up."],
+    ["Emotion over analysis", "Let your intuition lead. Your body speaks through sensations, emotions and what you feel drawn to or repelled by."]
+  ];
+
+  STEPS.forEach(function (st, i) { st.secs.forEach(function (sec) { sec.b.forEach(function (b) { if (b.k) b.key = "s" + i + "_" + b.k; }); }); });
+
+  /* ---------- helpers ---------- */
+  function h(tag, p) {
+    var e = document.createElement(tag), kids = Array.prototype.slice.call(arguments, 2), k, v;
+    p = p || {};
+    for (k in p) {
+      v = p[k]; if (v == null || v === false) continue;
+      if (k === "class") e.className = v;
+      else if (k === "text") e.textContent = v;
+      else if (k === "html") e.innerHTML = v;
+      else if (k === "value") e.value = v;
+      else if (k.slice(0, 2) === "on") e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v === true ? "" : v);
+    }
+    (function add(list) { list.forEach(function (c) { if (c == null || c === false) return; if (Array.isArray(c)) add(c); else e.append(c.nodeType ? c : document.createTextNode(c)); }); })(kids);
+    return e;
+  }
+  function sv(tag, attrs) { var e = document.createElementNS(NS, tag), k; for (k in attrs || {}) e.setAttribute(k, attrs[k]); return e; }
+  function P(r, a) { var t = a * Math.PI / 180; return [CX + r * Math.sin(t), CY - r * Math.cos(t)]; }
+  function f(n) { return Math.round(n * 100) / 100; }
+  function sector(r0, r1, a0, a1) {
+    var A = P(r1, a0), B = P(r1, a1), C = P(r0, a1), D = P(r0, a0), lg = (a1 - a0) > 180 ? 1 : 0;
+    return "M" + f(A[0]) + " " + f(A[1]) + "A" + r1 + " " + r1 + " 0 " + lg + " 1 " + f(B[0]) + " " + f(B[1]) + "L" + f(C[0]) + " " + f(C[1]) + "A" + r0 + " " + r0 + " 0 " + lg + " 0 " + f(D[0]) + " " + f(D[1]) + "Z";
+  }
+  function arc(r, a0, a1, rev) {
+    var A = P(r, a0), B = P(r, a1);
+    return rev ? "M" + f(B[0]) + " " + f(B[1]) + "A" + r + " " + r + " 0 0 0 " + f(A[0]) + " " + f(A[1]) : "M" + f(A[0]) + " " + f(A[1]) + "A" + r + " " + r + " 0 0 1 " + f(B[0]) + " " + f(B[1]);
+  }
+  function filled(x) { return typeof x === "string" && x.trim().length > 0; }
+  function today() { return new Date().toISOString().slice(0, 10); }
+  function trunc(s, n) { s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+
+  /* ---------- state + saving ---------- */
+  var LS = "annual-review-v2";
+  var S = { v: {}, done: {}, log: [], ts: 0 };
+  var dbDoc = null, downloads = null, saving = false, dirty = false, saveTimer = null, cur = 0;
+  function loadLocal() { try { var r = localStorage.getItem(LS); if (r) { var d = JSON.parse(r); S = { v: d.v || {}, done: d.done || {}, log: d.log || [], ts: d.ts || 0 }; } } catch (e) {} }
+  function saveLocal() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} idbPut("state", { id: "current", v: S.v, done: S.done, log: S.log, ts: S.ts }); }
+  function setStatus(s) {
+    var t = { pending: "Saving…", saved: "Saved to your private space", local: "Saved on this device", load: "Loading" };
+    document.getElementById("saveState").textContent = t[s] || "";
+  }
+  function val(k, d) { return Object.prototype.hasOwnProperty.call(S.v, k) ? S.v[k] : d; }
+  function put(k, x) { S.v[k] = x; touch(); }
+  function touch() { S.ts = Date.now(); updateProgress(); scheduleSave(); }
+  function scheduleSave() { saveLocal(); setStatus(dbDoc ? "pending" : "local"); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 1200); }
+  function flush() {
+    if (!dbDoc) { setStatus("local"); return; }
+    if (saving) { dirty = true; return; }
+    saving = true;
+    dbDoc.set({ v: S.v, done: S.done, log: S.log, ts: S.ts }).then(function () { setStatus("saved"); }, function () { setStatus("local"); }).then(function () { saving = false; if (dirty) { dirty = false; flush(); } });
+  }
+
+  /* ---------- progress ---------- */
+  function checked(o) { return Object.keys(o || {}).filter(function (i) { return o[i]; }).length; }
+  function frac(b) {
+    var key = b.key;
+    switch (b.kind) {
+      case "prompt": case "text": return filled(val(key, "")) ? 1 : 0;
+      case "check": return checked(val(key, {})) / b.items.length;
+      case "list": return Math.min(1, val(key, []).filter(filled).length / (b.target || 5));
+      case "sched": return Math.min(1, val(key, []).filter(function (r) { return r && (r.d || r.t || r.w); }).length / 3);
+      case "pick": { var x = val(key, b.multi ? [] : ""); return (b.multi ? x.length : x) ? 1 : 0; }
+      case "deck": { var o = val(key, {}); return Math.min(1, Object.keys(o).filter(function (i) { return o[i].p && filled(o[i].t); }).length / 5); }
+      case "mindmap": return Math.min(1, val(key, []).filter(function (r) { return filled(r.t); }).length / 5);
+      case "timeline": { var t = val(key, {}); return b.nodes.filter(function (n) { return t[n.id] && filled(t[n.id].x); }).length / b.nodes.length; }
+      case "board": return Math.min(1, val(key, []).filter(function (r) { return r.b === "active"; }).length / 3);
+      case "principles": { var p = val(key, { t: {} }); return Math.min(1, Object.keys(p.t || {}).filter(function (i) { return filled(p.t[i]); }).length / 3); }
+      case "dates": { var d = val(key, {}); return b.rows.filter(function (r, i) { return d[i]; }).length / b.rows.length; }
+      default: return null;
+    }
+  }
+  function stepFrac(i) {
+    var a = [];
+    STEPS[i].secs.forEach(function (sec) { sec.b.forEach(function (b) { var x = frac(b); if (x != null) a.push(x); }); });
+    return a.length ? a.reduce(function (s, x) { return s + x; }, 0) / a.length : 0;
+  }
+  function stepPct(i) { return S.done[i] ? 1 : stepFrac(i); }
+
+  /* ---------- wheel ---------- */
+  var svg = document.getElementById("wheel"), segEls = [], phaseEls = [], dotEls = [];
+  (function buildWheel() {
+    var html = "";
+    phases.forEach(function (p, i) {
+      var mid = (p.a0 + p.a1) / 2, rev = mid > 90 && mid < 270;
+      html += '<g class="phase p' + i + '" data-p="' + i + '" role="button" tabindex="0" aria-label="Phase: ' + p.name + '"><path class="shape" d="' + sector(306, 352, p.a0 + .3, p.a1 - .3) + '"/><path id="pp' + i + '" d="' + arc(rev ? 340 : 318, p.a0 + 1, p.a1 - 1, rev) + '" fill="none"/><text><textPath href="#pp' + i + '" startOffset="50%" text-anchor="middle">' + p.name.toUpperCase() + '</textPath></text></g>';
+    });
+    STEPS.forEach(function (s, i) {
+      var a0 = i * 30, a1 = a0 + 30, mid = a0 + 15, c = P(215, mid), ic = P(268, mid), nn = P(160, mid), bd = P(292, mid + 10);
+      html += '<g class="seg p' + s.ph + '" data-i="' + i + '" style="--i:' + i + '" role="button" tabindex="0" aria-label="Step ' + (i + 1) + ': ' + s.t + '"><path class="shape" d="' + sector(134, 304, a0 + .3, a1 - .3) + '"/>' +
+        '<g transform="translate(' + f(ic[0]) + ' ' + f(ic[1]) + ') scale(.8) translate(-24 -24)"><g class="ic">' + icons[s.ic] + '</g></g>' +
+        '<text class="t" x="' + f(c[0]) + '" y="' + f(c[1] - 4) + '">' + s.l[0] + '</text><text class="t" x="' + f(c[0]) + '" y="' + f(c[1] + 12) + '">' + s.l[1] + '</text>' +
+        '<text class="n" x="' + f(nn[0]) + '" y="' + f(nn[1] + 4) + '" text-anchor="middle">' + (i + 1) + '</text>' +
+        '<path class="ptrack" d="' + arc(146, a0 + 6, a1 - 6, false) + '"/><path class="pfill" pathLength="100" stroke-dasharray="0 100" d="' + arc(146, a0 + 6, a1 - 6, false) + '"/>' +
+        '<g transform="translate(' + f(bd[0]) + ' ' + f(bd[1]) + ')"><g class="badge"><circle r="8.5"/><path d="M-3.6 0.2l2.6 2.7 4.6-5.4"/></g></g></g>';
+    });
+    html += '<circle class="hub" cx="' + CX + '" cy="' + CY + '" r="128"/><circle class="hubtrack" cx="' + CX + '" cy="' + CY + '" r="128"/>' +
+      '<circle class="hubprog" id="hubprog" cx="' + CX + '" cy="' + CY + '" r="128" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 ' + CX + ' ' + CY + ')"/>' +
+      '<text class="hub-t" x="' + CX + '" y="' + (CY - 38) + '">The</text><text class="hub-t" x="' + CX + '" y="' + (CY + 12) + '">Annual</text><text class="hub-t" x="' + CX + '" y="' + (CY + 62) + '">Review</text><text class="hub-s" id="hubStep" x="' + CX + '" y="' + (CY + 100) + '"></text>';
+    svg.innerHTML = html;
+    segEls = Array.prototype.slice.call(svg.querySelectorAll(".seg"));
+    phaseEls = Array.prototype.slice.call(svg.querySelectorAll(".phase"));
+    var dots = document.getElementById("dots");
+    STEPS.forEach(function (s, i) {
+      var b = h("button", { class: "dot p" + s.ph, type: "button", "aria-label": "Step " + (i + 1) + ": " + s.t, onclick: function () { select(i, true, true); } });
+      dots.appendChild(b); dotEls.push(b);
+    });
+  })();
+  function updateProgress() {
+    var tot = 0, nd = 0;
+    STEPS.forEach(function (s, i) {
+      var pct = stepPct(i); tot += pct; if (S.done[i]) nd++;
+      var seg = segEls[i];
+      seg.querySelector(".pfill").setAttribute("stroke-dasharray", Math.round(pct * 100) + " 100");
+      seg.classList.toggle("done", !!S.done[i]);
+      dotEls[i].classList.toggle("done", !!S.done[i]);
+    });
+    document.getElementById("hubprog").setAttribute("stroke-dasharray", Math.round(tot / STEPS.length * 100) + " 100");
+    document.getElementById("hubStep").textContent = nd + " OF 12 DONE";
+    var lb = document.getElementById("bLog"); lb.textContent = "Resonance log" + (S.log.length ? " (" + S.log.length + ")" : "");
+  }
+
+  /* ---------- block renderers ---------- */
+  function fieldWrap(label, ctl) { return h("div", { class: "fld" }, label ? h("label", { text: label }) : null, ctl); }
+  var R = {};
+  R.info = function (b) { return h("div", { class: "callout", html: b.body }); };
+  R.prompt = function (b) {
+    var ta = h("textarea", { rows: b.rows || 3, class: b.tall ? "tall" : "", value: val(b.key, ""), oninput: function () { put(b.key, ta.value); } });
+    return fieldWrap(b.q, ta);
+  };
+  R.text = function (b) {
+    var inp = h("input", { type: "text", value: val(b.key, ""), oninput: function () { put(b.key, inp.value); } });
+    return fieldWrap(b.q, inp);
+  };
+  R.check = function (b) {
+    var o = val(b.key, {});
+    return h("div", { class: "fld" }, b.q ? h("span", { class: "lbl", text: b.q }) : null,
+      h("div", { class: "checks" }, b.items.map(function (it, i) {
+        var cb = h("input", { type: "checkbox" }); cb.checked = !!o[i];
+        var lab = h("label", { class: "ck" + (o[i] ? " struck" : "") }, cb, h("span", { text: it }));
+        cb.addEventListener("change", function () { var c = val(b.key, {}); c[i] = cb.checked; put(b.key, c); lab.classList.toggle("struck", cb.checked); });
+        return lab;
+      })));
+  };
+  R.list = function (b) {
+    var wrap = h("div", { class: "fld" }), rowsEl = h("div", { class: "fld" }), meta = h("div", { class: "meta" });
+    var arr = val(b.key, []).slice(); while (arr.length < b.n) arr.push("");
+    function count() { var n = arr.filter(filled).length; meta.firstChild.textContent = n + " of " + (b.target || b.n) + (b.heart ? " hearts" : ""); }
+    function row(i) {
+      var num = h("span", { class: "num" + (b.heart ? " heart" : "") + (filled(arr[i]) ? " on" : "") }, b.heart ? heartIcon() : String(i + 1));
+      var inp = h("input", { type: "text", value: arr[i], placeholder: b.ph || "", oninput: function () { arr[i] = inp.value; num.classList.toggle("on", filled(inp.value)); put(b.key, arr.slice()); count(); } });
+      return h("div", { class: "row" }, num, inp);
+    }
+    function draw() { rowsEl.innerHTML = ""; arr.forEach(function (_, i) { rowsEl.appendChild(row(i)); }); count(); }
+    meta.append(h("span", { text: "" }), h("button", { class: "mini", type: "button", text: "Add 5 more rows", onclick: function () { for (var k = 0; k < 5; k++) arr.push(""); draw(); } }));
+    wrap.append(b.q ? h("span", { class: "lbl", text: b.q }) : "", rowsEl, meta);
+    draw(); return wrap;
+  };
+  function heartIcon() { var s = sv("svg", { viewBox: "0 0 24 24" }); s.appendChild(sv("path", { d: "M12 21C4 15 2 11 4 7c2-3 6-3 8 0 2-3 6-3 8 0 2 4 0 8-8 14z", "stroke-linejoin": "round" })); return s; }
+  R.sched = function (b) {
+    var arr = val(b.key, []).slice(); while (arr.length < b.n) arr.push({});
+    var wrap = h("div", { class: "fld" }, h("span", { class: "lbl", text: "My sessions" }));
+    arr.forEach(function (r, i) {
+      function upd(k, v) { arr[i] = Object.assign({}, arr[i]); arr[i][k] = v; put(b.key, arr.slice()); }
+      var d = h("input", { type: "date", value: r.d || "", "aria-label": "Session " + (i + 1) + " date", oninput: function () { upd("d", d.value); } });
+      var t = h("input", { type: "time", value: r.t || "", "aria-label": "Session " + (i + 1) + " time", oninput: function () { upd("t", t.value); } });
+      var w = h("input", { type: "text", value: r.w || "", placeholder: "Where", "aria-label": "Session " + (i + 1) + " place", oninput: function () { upd("w", w.value); } });
+      wrap.appendChild(h("div", { class: "sched" }, h("span", { class: "num on", text: String(i + 1) }), d, t, w));
+    });
+    return wrap;
+  };
+  R.pick = function (b) {
+    var wrap = h("div", { class: "fld" }, h("span", { class: "lbl", text: b.q })), set = h("div", { class: "chipset" });
+    function draw() {
+      set.innerHTML = ""; var x = val(b.key, b.multi ? [] : "");
+      b.opts.forEach(function (o) {
+        var on = b.multi ? x.indexOf(o) > -1 : x === o;
+        set.appendChild(h("button", { class: "chipbtn", type: "button", "aria-pressed": on ? "true" : "false", text: o, onclick: function () {
+          var c = val(b.key, b.multi ? [] : "");
+          if (b.multi) { c = c.slice(); var j = c.indexOf(o); if (j > -1) c.splice(j, 1); else c.push(o); } else c = c === o ? "" : o;
+          put(b.key, c); draw();
+        } }));
+      });
+    }
+    draw(); wrap.appendChild(set); return wrap;
+  };
+  function signsTool(key) {
+    var wrap = h("div", { class: "fld" }), set = h("div", { class: "chipset" }), msg = h("div", { class: "callout" });
+    function draw() {
+      var o = val(key, {}), n = checked(o); set.innerHTML = "";
+      SIGNS.forEach(function (s, i) { set.appendChild(h("button", { class: "chipbtn", type: "button", "aria-pressed": o[i] ? "true" : "false", text: s, onclick: function () { var c = Object.assign({}, val(key, {})); c[i] = !c[i]; put(key, c); draw(); } })); });
+      msg.innerHTML = n >= 3 ? "<b>" + n + " of 6.</b> Three or more together means your body is telling you something your thinking mind has not caught up with. That is a yes." : "<b>" + n + " of 6.</b> Think of a project, direction or person, and tap any sign you feel. One alone could be nothing. Three or more is a yes.";
+    }
+    draw(); wrap.append(h("span", { class: "lbl", text: "The three signs of yes" }), set, msg); return wrap;
+  }
+  R.signs = function (b) { return signsTool(b.key); };
+  R.pacebtn = function () { return h("div", null, h("button", { class: "ctl small", type: "button", text: "Open the four PACE principles", onclick: openPace })); };
+  R.logbtn = function () { return h("div", null, h("button", { class: "ctl small", type: "button", text: "Add something to my resonance log", onclick: openLog })); };
+  R.spark = function (b) {
+    var g = 0, qi = 0, q = h("div", { class: "sparkq" }), tabs = h("div", { class: "chipset" });
+    function pick(rand) { var qs = b.groups[g].qs; qi = rand ? Math.floor(Math.random() * qs.length) : 0; q.textContent = qs[qi]; q.classList.remove("swapq"); void q.offsetWidth; q.classList.add("swapq"); }
+    function draw() { tabs.innerHTML = ""; b.groups.forEach(function (gr, i) { tabs.appendChild(h("button", { class: "chipbtn", type: "button", "aria-pressed": i === g ? "true" : "false", text: gr.t, onclick: function () { g = i; draw(); pick(true); } })); }); }
+    draw(); pick(false);
+    return h("div", { class: "spark" }, h("span", { class: "lbl", text: "Need a nudge? Pick a theme." }), tabs, q,
+      h("div", null, h("button", { class: "ctl small", type: "button", text: "Another one", onclick: function () { var n = b.groups[g].qs.length; qi = (qi + 1) % n; q.textContent = b.groups[g].qs[qi]; q.classList.remove("swapq"); void q.offsetWidth; q.classList.add("swapq"); } })));
+  };
+  R.deck = function (b) {
+    var g = 0, wrap = h("div", { class: "deck" });
+    function draw() {
+      var o = val(b.key, {}); wrap.innerHTML = "";
+      var picked = Object.keys(o).filter(function (i) { return o[i].p; }).length;
+      var shuffle = h("button", { class: "ctl small", type: "button", text: "Pick one for me", onclick: function () {
+        var pool = []; b.groups.forEach(function (gr, gi) { gr.qs.forEach(function (_, qi) { var id = gi + "_" + qi; if (!(o[id] && o[id].p)) pool.push([gi, qi]); }); });
+        if (!pool.length) return; var c = pool[Math.floor(Math.random() * pool.length)]; g = c[0];
+        var cur2 = val(b.key, {}); cur2[c[0] + "_" + c[1]] = { p: 1, t: (cur2[c[0] + "_" + c[1]] || {}).t || "" }; put(b.key, cur2); draw();
+        var tas = wrap.querySelectorAll("textarea"); if (tas.length) tas[tas.length - 1].focus({ preventScroll: false });
+      } });
+      wrap.appendChild(h("div", { class: "deckhead" }, h("span", { class: "meta", text: picked + " picked. Aim for 5 to 7, and skip the rest." }), shuffle));
+      if (b.groups.length > 1) wrap.appendChild(h("div", { class: "tabs" }, b.groups.map(function (gr, gi) { return h("button", { class: "tab" + (gi === g ? " on" : ""), type: "button", text: gr.t, onclick: function () { g = gi; draw(); } }); })));
+      b.groups[g].qs.forEach(function (q, qi) {
+        var id = g + "_" + qi, it = o[id] || {};
+        var card = h("div", { class: "qcard" + (it.p ? " picked" : "") }, h("button", { class: "qpick", type: "button", "aria-pressed": it.p ? "true" : "false", text: q, onclick: function () {
+          var c = val(b.key, {}); c[id] = { p: it.p ? 0 : 1, t: (c[id] || {}).t || "" }; put(b.key, c); draw();
+        } }));
+        if (it.p) { var ta = h("textarea", { rows: 3, value: it.t || "", placeholder: "A few honest sentences is plenty", "aria-label": q, oninput: function () { var c = val(b.key, {}); c[id] = { p: 1, t: ta.value }; put(b.key, c); } }); card.appendChild(h("div", { class: "qans" }, ta)); }
+        wrap.appendChild(card);
+      });
+    }
+    draw(); return wrap;
+  };
+  R.mindmap = function (b) {
+    var arr = val(b.key, []).slice(); if (!arr.length) arr = [{ t: "", w: "" }, { t: "", w: "" }, { t: "", w: "" }];
+    var rowsEl = h("div", { class: "fld" }), mapEl = h("div", { class: "mm" });
+    function drawMap() {
+      var items = arr.filter(function (r) { return filled(r.t); }), n = items.length;
+      var s = sv("svg", { viewBox: "0 0 600 360", role: "img", "aria-label": "Excitement map" });
+      s.appendChild(sv("rect", { width: 600, height: 360, rx: 14, fill: "var(--field)" }));
+      items.forEach(function (it, i) {
+        var a = 2 * Math.PI * i / n - Math.PI / 2, x = 300 + 190 * Math.cos(a), y = 180 + 118 * Math.sin(a);
+        s.appendChild(sv("line", { x1: 300, y1: 180, x2: x, y2: y, stroke: "var(--p" + (i % 5) + ")", "stroke-width": 3, "stroke-linecap": "round" }));
+      });
+      items.forEach(function (it, i) {
+        var a = 2 * Math.PI * i / n - Math.PI / 2, x = 300 + 190 * Math.cos(a), y = 180 + 118 * Math.sin(a), g = sv("g", { class: "mmnode" });
+        var c = sv("circle", { cx: x, cy: y, r: 24, fill: "var(--p" + (i % 5) + ")" }); g.appendChild(c);
+        var tt = sv("title"); tt.textContent = it.t + (filled(it.w) ? " | " + it.w : ""); g.appendChild(tt);
+        var t1 = sv("text", { x: x, y: y + 5, "text-anchor": "middle", "font-size": 13, "font-weight": 700, "font-family": "var(--font-display)", fill: "var(--p" + (i % 5) + "-fg)" }); t1.textContent = String(i + 1); g.appendChild(t1);
+        var below = y > 180 ? y + 42 : y - 34;
+        var t2 = sv("text", { x: x, y: below, "text-anchor": "middle", "font-size": 13, "font-weight": 600, "font-family": "var(--font-display)", fill: "var(--ink)" }); t2.textContent = trunc(it.t, 22); g.appendChild(t2);
+        if (filled(it.w)) { var t3 = sv("text", { x: x, y: below + 15, "text-anchor": "middle", "font-size": 11.5, "font-family": "var(--font-body)", "font-style": "italic", fill: "var(--muted)" }); t3.textContent = trunc(it.w, 28); g.appendChild(t3); }
+        s.appendChild(g);
+      });
+      s.appendChild(sv("circle", { cx: 300, cy: 180, r: 38, fill: "var(--ink)" }));
+      var lt = sv("text", { x: 300, y: 187, "text-anchor": "middle", "font-size": 20, "font-weight": 700, "font-family": "var(--font-display)", fill: "var(--surface)" }); lt.textContent = "Life"; s.appendChild(lt);
+      mapEl.innerHTML = ""; mapEl.appendChild(s);
+    }
+    function drawRows() {
+      rowsEl.innerHTML = "";
+      arr.forEach(function (r, i) {
+        var t = h("input", { type: "text", value: r.t, placeholder: "Something that excites me", "aria-label": "Topic " + (i + 1), oninput: function () { arr[i] = { t: t.value, w: arr[i].w }; num.classList.toggle("on", filled(t.value)); put(b.key, arr.slice()); drawMap(); } });
+        var w = h("input", { type: "text", value: r.w, placeholder: "Why? Which aspect or form?", "aria-label": "Why topic " + (i + 1), oninput: function () { arr[i] = { t: arr[i].t, w: w.value }; put(b.key, arr.slice()); drawMap(); } });
+        var num = h("span", { class: "num" + (filled(r.t) ? " on" : ""), text: String(i + 1) });
+        rowsEl.appendChild(h("div", { class: "fld" }, h("div", { class: "row" }, num, t), h("div", { class: "row" }, h("span"), w)));
+      });
+    }
+    drawRows(); drawMap();
+    return h("div", { class: "fld" }, rowsEl, h("div", { class: "meta" }, h("button", { class: "mini", type: "button", text: "Add a branch", onclick: function () { if (arr.length < 12) { arr.push({ t: "", w: "" }); drawRows(); } } }), h("span", { text: "The map grows as you type." })), mapEl);
+  };
+  R.timeline = function (b) {
+    var sel = "half", wrap = h("div", { class: "tl fld" }), ed = h("div", { class: "fld" });
+    var X = { now: 70, quarter: 190, half: 310, hor: 520 };
+    function draw() {
+      var o = val(b.key, {}); wrap.innerHTML = "";
+      var s = sv("svg", { viewBox: "0 0 600 110", role: "group", "aria-label": "Backcast timeline" });
+      s.appendChild(sv("line", { x1: 30, y1: 40, x2: 570, y2: 40, stroke: "var(--line)", "stroke-width": 5, "stroke-linecap": "round" }));
+      s.appendChild(sv("line", { x1: 30, y1: 40, x2: 30 + (570 - 30) * (b.nodes.filter(function (n) { return o[n.id] && filled(o[n.id].x); }).length / b.nodes.length), y2: 40, stroke: "var(--cur)", "stroke-width": 5, "stroke-linecap": "round" }));
+      b.nodes.forEach(function (n) {
+        var done = o[n.id] && filled(o[n.id].x), on = sel === n.id, g = sv("g", { class: "tlnode", tabindex: 0, role: "button", "aria-label": n.label + " mark" });
+        g.appendChild(sv("circle", { cx: X[n.id], cy: 40, r: on ? 22 : 17, fill: done ? "var(--cur)" : "var(--surface)", stroke: "var(--cur)", "stroke-width": 3 }));
+        var t = sv("text", { x: X[n.id], y: 46, "text-anchor": "middle", "font-size": 16, "font-weight": 700, "font-family": "var(--font-display)", fill: done ? "var(--cur-fg)" : "var(--ink)" }); t.textContent = String(n.n); g.appendChild(t);
+        var l = sv("text", { x: X[n.id], y: 84, "text-anchor": "middle", "font-size": 13, "font-weight": on ? 700 : 600, "font-family": "var(--font-display)", fill: "var(--ink)" }); l.textContent = n.label; g.appendChild(l);
+        function go() { sel = n.id; draw(); }
+        g.addEventListener("click", go); g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+        s.appendChild(g);
+      });
+      s.appendChild(sv("path", { d: "M520 20l5 12 13 1-10 8 3 13-11-7-11 7 3-13-10-8 13-1z", fill: "var(--p1)", stroke: "var(--ink)", "stroke-width": 2, "stroke-linejoin": "round" }));
+      var hl = sv("text", { x: 520, y: 84, "text-anchor": "middle", "font-size": 13, "font-weight": 600, "font-family": "var(--font-display)", fill: "var(--ink)" }); hl.textContent = "Horizon"; s.appendChild(hl);
+      wrap.appendChild(s);
+      var n = b.nodes.filter(function (x) { return x.id === sel; })[0], cur2 = o[n.id] || {};
+      ed.innerHTML = "";
+      ed.appendChild(h("div", { class: "callout", html: "<b>" + n.label + " mark.</b> " + n.hint }));
+      ed.appendChild(h("ul", { class: "meta", style: "display:grid;gap:4px;padding-left:18px;font-weight:400;font-family:var(--font-body);font-size:14.5px;font-style:italic" }, n.qs.map(function (q) { return h("li", { text: q }); })));
+      var d = h("input", { type: "text", value: cur2.d || "", placeholder: "Date I am imagining", "aria-label": "Date for " + n.label, oninput: function () { var c = val(b.key, {}); c[n.id] = { d: d.value, x: (c[n.id] || {}).x || "" }; put(b.key, c); } });
+      var ta = h("textarea", { rows: 4, value: cur2.x || "", placeholder: "My answers", "aria-label": "Answers for " + n.label, oninput: function () { var c = val(b.key, {}); c[n.id] = { d: (c[n.id] || {}).d || "", x: ta.value }; put(b.key, c); }, onblur: draw });
+      ed.append(d, ta);
+    }
+    draw(); return h("div", { class: "fld" }, h("div", { class: "meta", text: "Start at the horizon and work back: 1 halfway, 2 quarter, 3 today. Tap a number." }), wrap, ed);
+  };
+  var COLS = [["active", "Active"], ["shrink", "Shrink or hand off"], ["later", "Someday / maybe"], ["cut", "Dropped"]];
+  R.board = function (b) {
+    var wrap = h("div", { class: "fld" });
+    function draw() {
+      var arr = val(b.key, []); wrap.innerHTML = "";
+      var act = arr.filter(function (r) { return r.b === "active"; }).length;
+      var nm = h("input", { type: "text", placeholder: "Project name", "aria-label": "Project name" }), oc = h("input", { type: "text", placeholder: "Outcome or goal", "aria-label": "Project outcome" });
+      function add() { if (!filled(nm.value)) { nm.focus(); return; } var c = val(b.key, []).slice(); c.push({ n: nm.value.trim(), o: oc.value.trim(), b: "active" }); put(b.key, c); draw(); }
+      nm.addEventListener("keydown", function (e) { if (e.key === "Enter") add(); }); oc.addEventListener("keydown", function (e) { if (e.key === "Enter") add(); });
+      wrap.appendChild(h("div", { class: "addrow" }, nm, oc, h("button", { class: "ctl small primary", type: "button", text: "Add project", onclick: add })));
+      wrap.appendChild(h("div", { class: "meter", role: "img", "aria-label": act + " active projects" }, h("i", { style: "width:" + Math.min(100, act / 20 * 100) + "%" })));
+      wrap.appendChild(h("div", { class: "meta", text: act + " active. Aim for 10 to 20 in total. Most people only have room for 2 or 3 new ones." }));
+      var board = h("div", { class: "board" });
+      COLS.forEach(function (c, ci) {
+        var col = h("div", { class: "col" }, h("h4", null, h("span", { text: c[1] }), h("span", { text: String(arr.filter(function (r) { return r.b === c[0]; }).length) })));
+        arr.forEach(function (r, ri) {
+          if (r.b !== c[0]) return;
+          function mv(d) { var x = val(b.key, []).slice(); x[ri] = Object.assign({}, x[ri], { b: COLS[ci + d][0] }); put(b.key, x); draw(); }
+          col.appendChild(h("div", { class: "card" }, h("b", { text: r.n }), r.o ? h("span", { text: r.o }) : null,
+            h("div", { class: "acts" }, ci > 0 ? h("button", { class: "mini", type: "button", text: "←", "aria-label": "Move to " + COLS[ci - 1][1], onclick: function () { mv(-1); } }) : null,
+              ci < COLS.length - 1 ? h("button", { class: "mini", type: "button", text: "→", "aria-label": "Move to " + COLS[ci + 1][1], onclick: function () { mv(1); } }) : null,
+              h("button", { class: "mini", type: "button", text: "Remove", onclick: function () { var x = val(b.key, []).slice(); x.splice(ri, 1); put(b.key, x); draw(); } }))));
+        });
+        board.appendChild(col);
+      });
+      wrap.appendChild(board);
+    }
+    draw(); return wrap;
+  };
+  R.principles = function (b) {
+    var wrap = h("div", { class: "fld" }), rowsEl = h("div", { class: "fld" });
+    function st() { return val(b.key, { sel: [], t: {} }); }
+    function draw() {
+      var o = st(); wrap.innerHTML = ""; rowsEl.innerHTML = "";
+      wrap.appendChild(h("div", { class: "chipset" }, AREAS.map(function (a, i) {
+        var on = o.sel.indexOf(i) > -1;
+        return h("button", { class: "chipbtn", type: "button", "aria-pressed": on ? "true" : "false", text: a, onclick: function () { var c = st(); c = { sel: c.sel.slice(), t: Object.assign({}, c.t) }; var j = c.sel.indexOf(i); if (j > -1) c.sel.splice(j, 1); else if (c.sel.length < 5) c.sel.push(i); put(b.key, c); draw(); } });
+      })));
+      o.sel.forEach(function (i) {
+        var inp = h("input", { type: "text", value: o.t[i] || "", placeholder: "One sentence", oninput: function () { var c = st(); c.t = Object.assign({}, c.t); c.t[i] = inp.value; put(b.key, c); } });
+        rowsEl.appendChild(fieldWrap("A principle for: " + AREAS[i].toLowerCase(), inp));
+      });
+      wrap.appendChild(rowsEl);
+      wrap.appendChild(h("div", { class: "meta", text: o.sel.length + " of up to 5 chosen" }));
+    }
+    draw(); return wrap;
+  };
+  R.dates = function (b) {
+    var wrap = h("div", { class: "fld" });
+    b.rows.forEach(function (r, i) {
+      var d = h("input", { type: "date", value: (val(b.key, {})[i]) || "", "aria-label": r, oninput: function () { var c = Object.assign({}, val(b.key, {})); c[i] = d.value; put(b.key, c); } });
+      wrap.appendChild(h("div", { class: "row", style: "grid-template-columns:minmax(0,1fr) minmax(0,1fr)" }, h("span", { class: "lbl", text: r }), d));
+    });
+    return wrap;
+  };
+  function closeText() { return ["c1", "c2", "c3", "c4"].map(function (k, i) { var t = val("s10_" + k, ""); return filled(t) ? ["Intention fulfilled", "Results", "Decisions and changes", "Perspective shift"][i] + ": " + t.trim() : ""; }).filter(Boolean).join("\n"); }
+  function prinText() { var o = val("s10_prin", { sel: [], t: {} }); return o.sel.map(function (i) { return filled(o.t[i]) ? "On " + AREAS[i].toLowerCase() + ": " + o.t[i].trim() : ""; }).filter(Boolean).join("\n"); }
+  R.assemble = function (b) {
+    var out = h("div", { class: "letter" }), msg = h("div", { class: "meta" });
+    function build() {
+      var parts = ["Dear future me,", "", today()];
+      b.parts.forEach(function (p) {
+        var t = p[1] === "@prin" ? prinText() : p[1] === "@close" ? closeText() : (val("s10_" + p[1], "") || "").trim();
+        if (t) parts.push("", p[0].toUpperCase(), t);
+      });
+      return parts.join("\n");
+    }
+    function show() { out.textContent = build(); }
+    show();
+    return h("div", { class: "fld" }, out, h("div", { class: "meta" },
+      h("button", { class: "ctl small primary", type: "button", text: "Refresh from my answers", onclick: show }),
+      h("button", { class: "ctl small", type: "button", text: "Copy letter", onclick: function () { copyText(build(), msg); } }), msg));
+  };
+  function copyText(text, msgEl) {
+    function ok() { if (msgEl) msgEl.textContent = "Copied"; toast("Copied"); }
+    function fail() { if (msgEl) msgEl.textContent = "Copy did not work here. Select the text and copy it by hand."; }
+    try { navigator.clipboard.writeText(text).then(ok, fail); } catch (e) { fail(); }
+  }
+
+  /* ---------- workspace ---------- */
+  var panel = document.getElementById("panel");
+  function renderStep(i, animate) {
+    var st = STEPS[i], ph = phases[st.ph];
+    panel.innerHTML = "";
+    var chips = h("div", { class: "chips" }, h("span", { class: "chip", text: ph.name }), ph.time ? h("span", { class: "chip alt", text: ph.time }) : null, h("span", { class: "chip alt", text: "Step " + (i + 1) + " of 12" }));
+    panel.append(chips, h("h2", { text: st.t }), h("p", { class: "summary", text: st.s }));
+    st.secs.forEach(function (sec, si) {
+      var d = h("details", { class: "sec" }, h("summary", { text: sec.t }));
+      if (si === 0 || sec.open) d.setAttribute("open", "");
+      var body = h("div", { class: "secbody" });
+      sec.b.forEach(function (b) { body.appendChild(R[b.kind](b)); });
+      d.appendChild(body); panel.appendChild(d);
+    });
+    var doneBtn = h("button", { class: "ctl primary stampbtn" + (S.done[i] ? " done" : ""), type: "button", text: S.done[i] ? "Completed. Tap to undo" : "Mark step complete", onclick: function () { toggleDone(i, doneBtn); } });
+    panel.appendChild(h("div", { class: "foot" }, doneBtn, h("button", { class: "ctl", type: "button", text: i < 11 ? "Next step" : "Back to the start", onclick: function () { select((i + 1) % 12, true, true); } })));
+    if (animate) { panel.classList.remove("swap"); void panel.offsetWidth; panel.classList.add("swap"); }
+  }
+  function select(i, animate, scroll) {
+    i = (i + 12) % 12; cur = i;
+    var st = STEPS[i];
+    var root = document.documentElement;
+    root.style.setProperty("--cur", "var(--p" + st.ph + ")"); root.style.setProperty("--cur-fg", "var(--p" + st.ph + "-fg)");
+    segEls.forEach(function (g, k) {
+      var on = k === i; g.classList.toggle("on", on); g.setAttribute("aria-pressed", on ? "true" : "false");
+      var t = (k * 30 + 15) * Math.PI / 180; g.style.transform = on ? "translate(" + f(11 * Math.sin(t)) + "px," + f(-11 * Math.cos(t)) + "px)" : "none";
+    });
+    phaseEls.forEach(function (g, k) { g.classList.toggle("on", k === st.ph); });
+    dotEls.forEach(function (d, k) { d.classList.toggle("on", k === i); });
+    renderStep(i, animate);
+    updateProgress();
+    if (scroll) { var r = panel.getBoundingClientRect(); if (r.top < 0 || window.innerWidth <= 880) window.scrollBy({ top: r.top - 12, behavior: "smooth" }); }
+  }
+  function toggleDone(i, btn) {
+    S.done[i] = !S.done[i]; touch();
+    btn.textContent = S.done[i] ? "Completed. Tap to undo" : "Mark step complete"; btn.classList.toggle("done", !!S.done[i]);
+    if (S.done[i]) {
+      var r = btn.getBoundingClientRect(); burst(r.left + r.width / 2, r.top);
+      var n = Object.keys(S.done).filter(function (k) { return S.done[k]; }).length;
+      toast(n === 12 ? "All twelve steps done. Well done." : "Step complete. " + n + " of 12 done.");
+      if (n === 12) { snapshot("Completed review " + today()); setTimeout(finale, 900); }
+    }
+  }
+  function nextTodo() {
+    for (var k = 1; k <= 12; k++) { var j = (cur + k) % 12; if (!S.done[j]) { select(j, true, true); return; } }
+    toast("Every step is done");
+  }
+
+  /* ---------- toast, confetti, modals ---------- */
+  var toastT;
+  function toast(t) { var el = document.getElementById("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(function () { el.classList.remove("show"); }, 2400); }
+  function burst(x, y) {
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    for (var i = 0; i < 26; i++) {
+      var a = Math.random() * Math.PI * 2, d = 60 + Math.random() * 110;
+      var c = h("span", { class: "conf", style: "left:" + x + "px;top:" + y + "px;background:var(--p" + (i % 5) + ");--dx:" + f(Math.cos(a) * d) + "px;--dy:" + f(Math.sin(a) * d - 40) + "px;--r:" + Math.round(Math.random() * 720 - 360) + "deg" });
+      document.body.appendChild(c); setTimeout(function (el) { return function () { el.remove(); }; }(c), 1000);
+    }
+  }
+  var modal = document.getElementById("modal"), lastFocus = null;
+  function openModal(title, body) {
+    lastFocus = document.activeElement; document.getElementById("modalTitle").textContent = title;
+    var mb = document.getElementById("modalBody"); mb.innerHTML = ""; mb.appendChild(body); modal.hidden = false; document.getElementById("modalClose").focus();
+  }
+  function closeModal() { modal.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); updateProgress(); }
+  document.getElementById("modalClose").addEventListener("click", closeModal);
+  modal.addEventListener("click", function (e) { if (e.target === modal) closeModal(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !modal.hidden) closeModal(); });
+
+  function openPace() {
+    var wrap = h("div", { class: "fld" }), grid = h("div", { class: "pace" });
+    PACE.forEach(function (p, i) {
+      var c = h("button", { class: "pcard p" + i, type: "button", "aria-pressed": "false" }, h("b", { text: p[0] }), h("small", { text: "TAP TO READ" }));
+      c.addEventListener("click", function () { var on = c.getAttribute("aria-pressed") === "true"; c.setAttribute("aria-pressed", on ? "false" : "true"); c.innerHTML = ""; c.appendChild(h("b", { text: p[0] })); if (!on) c.appendChild(h("span", { text: p[1] })); else c.appendChild(h("small", { text: "TAP TO READ" })); });
+      grid.appendChild(c);
+    });
+    wrap.append(h("p", { class: "summary", text: "Four principles for the mindset you bring to the review. Pleasure, appreciation, concrete, emotion." }), grid, signsTool("pace_signs"));
+    openModal("PACE principles", wrap);
+  }
+  function openLog() {
+    var wrap = h("div", { class: "fld" }), tag = "", listEl = h("div"), chips = h("div", { class: "chipset" });
+    var ta = h("textarea", { rows: 3, placeholder: "A few words, or just a fragment. Date is added for you.", "aria-label": "Resonance entry" });
+    function drawChips() { chips.innerHTML = ""; TAGS.forEach(function (t) { chips.appendChild(h("button", { class: "chipbtn", type: "button", title: t[1], "aria-pressed": tag === t[0] ? "true" : "false", text: t[0], onclick: function () { tag = tag === t[0] ? "" : t[0]; drawChips(); } })); }); }
+    function drawList() {
+      listEl.innerHTML = "";
+      if (!S.log.length) listEl.appendChild(h("p", { class: "meta", text: "Nothing yet. Catch anything that surprises, interests, confuses or amazes you." }));
+      S.log.forEach(function (e, i) { listEl.appendChild(h("div", { class: "logitem" }, h("div", { class: "meta" }, h("b", { text: e.d }), e.g ? h("span", { text: e.g }) : null, h("button", { class: "mini", type: "button", text: "Delete", onclick: function () { S.log.splice(i, 1); touch(); drawList(); } })), h("div", { text: e.t }))); });
+    }
+    wrap.append(h("p", { class: "summary", text: "A place for anything that resonates during the review and the year after. Fragments are welcome." }), ta, chips,
+      h("div", null, h("button", { class: "ctl primary small", type: "button", text: "Add to log", onclick: function () { if (!filled(ta.value)) { ta.focus(); return; } S.log.unshift({ d: today(), t: ta.value.trim(), g: tag }); ta.value = ""; touch(); drawList(); } })), listEl);
+    drawChips(); drawList(); openModal("Resonance log", wrap);
+  }
+  function expBlock(b) {
+    var k = b.key, v = val(k, null), q = b.q ? "**" + b.q + "**\n" : "", i;
+    switch (b.kind) {
+      case "prompt": case "text": return filled(v) ? q + v.trim() : "";
+      case "check": { if (!v || !checked(v)) return ""; return q + b.items.map(function (it, j) { return "- [" + (v[j] ? "x" : " ") + "] " + it; }).join("\n"); }
+      case "list": { var l = (v || []).filter(filled); return l.length ? q + l.map(function (x, j) { return (j + 1) + ". " + x; }).join("\n") : ""; }
+      case "sched": { var s = (v || []).filter(function (r) { return r && (r.d || r.t || r.w); }); return s.length ? "**Sessions**\n" + s.map(function (r) { return "- " + [r.d, r.t, r.w].filter(Boolean).join(", "); }).join("\n") : ""; }
+      case "pick": { var p = b.multi ? (v || []).join(", ") : v; return p ? q + p : ""; }
+      case "deck": { var out = []; b.groups.forEach(function (g, gi) { g.qs.forEach(function (qq, qi) { var it = (v || {})[gi + "_" + qi]; if (it && it.p && filled(it.t)) out.push("**" + qq + "**\n" + it.t.trim()); }); }); return out.join("\n\n"); }
+      case "mindmap": { var m = (v || []).filter(function (r) { return filled(r.t); }); return m.length ? "**Excitement map**\n" + m.map(function (r) { return "- " + r.t + (filled(r.w) ? ": " + r.w : ""); }).join("\n") : ""; }
+      case "timeline": { var o = []; b.nodes.forEach(function (n) { var it = (v || {})[n.id]; if (it && filled(it.x)) o.push("**" + n.label + " mark" + (it.d ? " (" + it.d + ")" : "") + "**\n" + it.x.trim()); }); return o.join("\n\n"); }
+      case "board": { if (!v || !v.length) return ""; return COLS.map(function (c) { var r = v.filter(function (x) { return x.b === c[0]; }); return r.length ? "**" + c[1] + "**\n" + r.map(function (x) { return "- " + x.n + (x.o ? ": " + x.o : ""); }).join("\n") : ""; }).filter(Boolean).join("\n\n"); }
+      case "principles": return prinText() ? "**Operating principles**\n" + prinText().split("\n").map(function (x) { return "- " + x; }).join("\n") : "";
+      case "dates": { var d = b.rows.map(function (r, j) { return v && v[j] ? "- " + r + ": " + v[j] : ""; }).filter(Boolean); return d.join("\n"); }
+      default: return "";
+    }
+  }
+  function exportMd() {
+    var out = "# My Annual Review\n\n";
+    STEPS.forEach(function (st, i) {
+      var body = "";
+      st.secs.forEach(function (sec) { var sb = sec.b.map(expBlock).filter(Boolean).join("\n\n"); if (sb) body += "### " + sec.t + "\n\n" + sb + "\n\n"; });
+      if (body || S.done[i]) out += "## " + (i + 1) + ". " + st.t + (S.done[i] ? " (done)" : "") + "\n\n" + body;
+    });
+    if (S.log.length) out += "## Resonance log\n\n" + S.log.map(function (e) { return "- " + e.d + (e.g ? " [" + e.g + "]" : "") + ": " + e.t; }).join("\n") + "\n";
+    return out;
+  }
+  function openExport() {
+    var text = exportMd(), ta = h("textarea", { rows: 14, readonly: true, "aria-label": "Review as text", value: text }), msg = h("span", { class: "meta" });
+    var acts = h("div", { class: "meta" }, h("button", { class: "ctl small primary", type: "button", text: "Copy", onclick: function () { copyText(text, msg); } }));
+    if (downloads) acts.appendChild(h("button", { class: "ctl small", type: "button", text: "Save as file", onclick: function () { downloads.save({ filename: "my-annual-review.md", data: text }).then(function () { msg.textContent = "Saved"; }, function (e) { msg.textContent = e && e.code === "declined" ? "Cancelled" : "Saving a file did not work here. Copy the text instead."; }); } }));
+    acts.appendChild(msg);
+    openModal("Export my review", h("div", { class: "fld" }, h("p", { class: "summary", text: "Everything you wrote, as plain text you can paste into Notes, a doc or an email." }), ta, acts));
+  }
+
+  /* ---------- local database (IndexedDB), versions, backup file ---------- */
+  var idb = null, SN = [];
+  function idbOpen() {
+    return new Promise(function (res) {
+      try {
+        var r = indexedDB.open("annual-review", 1);
+        r.onupgradeneeded = function () { var d = r.result; d.createObjectStore("snaps", { keyPath: "id" }); d.createObjectStore("state", { keyPath: "id" }); };
+        r.onsuccess = function () { res(r.result); }; r.onerror = function () { res(null); }; r.onblocked = function () { res(null); };
+      } catch (e) { res(null); }
+    });
+  }
+  function idbPut(store, obj) {
+    if (!idb) return Promise.resolve(false);
+    return new Promise(function (res) { try { var t = idb.transaction(store, "readwrite"); t.objectStore(store).put(obj); t.oncomplete = function () { res(true); }; t.onerror = t.onabort = function () { res(false); }; } catch (e) { res(false); } });
+  }
+  function idbDel(store, id) {
+    if (!idb) return Promise.resolve(false);
+    return new Promise(function (res) { try { var t = idb.transaction(store, "readwrite"); t.objectStore(store).delete(id); t.oncomplete = function () { res(true); }; t.onerror = t.onabort = function () { res(false); }; } catch (e) { res(false); } });
+  }
+  function idbGetAll(store) {
+    if (!idb) return Promise.resolve([]);
+    return new Promise(function (res) { try { var r = idb.transaction(store, "readonly").objectStore(store).getAll(); r.onsuccess = function () { res(r.result || []); }; r.onerror = function () { res([]); }; } catch (e) { res([]); } });
+  }
+  function snapshot(name) {
+    var o = { id: "v" + Date.now() + Math.random().toString(36).slice(2, 6), name: name, ts: Date.now(), data: JSON.parse(JSON.stringify({ v: S.v, done: S.done, log: S.log })) };
+    SN.unshift(o); return idbPut("snaps", o).then(function (ok) { return ok; });
+  }
+  function snapStats(o) { return { done: checked(o.data.done), fields: Object.keys(o.data.v || {}).length }; }
+  function applyData(d) {
+    S = { v: d.v || {}, done: d.done || {}, log: d.log || [], ts: Date.now() };
+    saveLocal(); scheduleSave(); select(cur, false, false);
+  }
+  function fmtDate(ts) { try { return new Date(ts).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); } catch (e) { return String(ts); } }
+  function openVersions() {
+    var wrap = h("div", { class: "fld" }), listEl = h("div"), msg = h("div", { class: "meta" });
+    var nm = h("input", { type: "text", value: "Review " + today(), "aria-label": "Version name" });
+    function say(t) { msg.textContent = t; }
+    function drawList() {
+      listEl.innerHTML = "";
+      if (!idb) listEl.appendChild(h("p", { class: "meta", text: "This browser does not allow local storage for versions here. Use the backup file below." }));
+      else if (!SN.length) listEl.appendChild(h("p", { class: "meta", text: "No versions yet. Save one to freeze today's answers, for example at the end of each review year." }));
+      SN.forEach(function (o, i) {
+        var st = snapStats(o), ask = false, box = h("div", { class: "meta" });
+        function draw() {
+          box.innerHTML = "";
+          if (ask) {
+            box.append(h("span", { text: "Replace current answers? They are saved as a version first." }),
+              h("button", { class: "mini", type: "button", text: "Yes, restore", onclick: function () { snapshot("Before restore " + fmtDate(Date.now())).then(function () { applyData(o.data); ask = false; say("Restored “" + o.name + "”"); drawList(); }); } }),
+              h("button", { class: "mini", type: "button", text: "Cancel", onclick: function () { ask = false; draw(); } }));
+          } else {
+            box.append(h("button", { class: "mini", type: "button", text: "Restore", onclick: function () { ask = true; draw(); } }),
+              h("button", { class: "mini", type: "button", text: "Save as file", onclick: function () { saveFile("annual-review-" + o.name.replace(/[^\w\-]+/g, "-") + ".json", JSON.stringify({ app: "annual-review", version: 2, current: o.data }, null, 2), say); } }),
+              h("button", { class: "mini", type: "button", text: "Delete", onclick: function () { idbDel("snaps", o.id).then(function () { SN.splice(SN.indexOf(o), 1); drawList(); }); } }));
+          }
+        }
+        draw();
+        listEl.appendChild(h("div", { class: "logitem" }, h("div", { class: "meta" }, h("b", { text: o.name }), h("span", { text: fmtDate(o.ts) }), h("span", { text: st.done + " of 12 steps done, " + st.fields + " answers" })), box));
+      });
+    }
+    var file = h("input", { type: "file", accept: ".json,application/json", "aria-label": "Choose a backup file" });
+    file.addEventListener("change", function () {
+      var f = file.files && file.files[0]; if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        try {
+          var j = JSON.parse(rd.result);
+          if (!j || j.app !== "annual-review" || !j.current || typeof j.current.v !== "object") throw new Error("not a backup");
+          snapshot("Before import " + fmtDate(Date.now())).then(function () {
+            var add = (j.snaps || []).filter(function (x) { return x && x.id && x.data && !SN.some(function (y) { return y.id === x.id; }); });
+            return Promise.all(add.map(function (x) { SN.push(x); return idbPut("snaps", x); }));
+          }).then(function () { SN.sort(function (a, b) { return b.ts - a.ts; }); applyData(j.current); say("Backup imported. Your previous answers are saved as a version."); drawList(); });
+        } catch (e) { say("That file is not an Annual Review backup."); }
+      };
+      rd.readAsText(f);
+    });
+    wrap.append(
+      h("p", { class: "summary", text: "Versions are frozen copies of your answers, stored in this browser's local database on this device. Use the backup file if you want to keep them elsewhere or move to another device." }),
+      h("div", { class: "fld" }, h("label", { text: "Save a version of how things stand now" }), nm,
+        h("div", null, h("button", { class: "ctl primary small", type: "button", text: "Save version", onclick: function () { var n = nm.value.trim() || "Review " + today(); snapshot(n).then(function (ok) { say(ok ? "Saved “" + n + "”" : "Could not store it here. Use the backup file."); drawList(); }); } }))),
+      listEl,
+      h("div", { class: "callout", html: "<b>Backup file.</b> One JSON file with your current answers and all versions. Importing a file replaces your current answers (after saving them as a version)." }),
+      h("div", { class: "meta" }, h("button", { class: "ctl small", type: "button", text: "Download backup", onclick: function () { saveFile("annual-review-backup-" + today() + ".json", JSON.stringify({ app: "annual-review", version: 2, current: { v: S.v, done: S.done, log: S.log }, snaps: SN }, null, 2), say); } })),
+      h("div", { class: "fld" }, h("label", { text: "Restore from a backup file" }), file), msg);
+    drawList(); openModal("Versions and backup", wrap);
+  }
+  function saveFile(name, text, say) {
+    if (!downloads) { say("Saving files is not available here. Copy from Export instead."); return; }
+    downloads.save({ filename: name, data: text }).then(function () { say("Saved"); }, function (e) { say(e && e.code === "declined" ? "Cancelled" : "Saving a file did not work here."); });
+  }
+  function finale() {
+    var w = h("div", { class: "fld" }, h("p", { class: "summary", text: "You finished all twelve steps. Even a review that feels imperfect has already changed you, whether you notice it yet or not." }), h("div", { class: "callout", html: "<b>One last thing.</b> Open the last step and mark how you will close the ritual: burn the page, take a walk, light a candle. Then put your check-in dates in your calendar." }), h("div", null, h("button", { class: "ctl primary small", type: "button", text: "Export my review", onclick: function () { closeModal(); openExport(); } })));
+    openModal("Your review is complete", w);
+    var r = document.getElementById("modalTitle").getBoundingClientRect(); burst(r.left + 120, r.top);
+  }
+
+  /* ---------- events ---------- */
+  segEls.forEach(function (g) {
+    g.addEventListener("click", function () { select(+g.dataset.i, true, true); });
+    g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(+g.dataset.i, true, true); } });
+  });
+  phaseEls.forEach(function (g) {
+    function go() { var p = +g.dataset.p; for (var k = 0; k < 12; k++) if (STEPS[k].ph === p) { select(k, true, true); return; } }
+    g.addEventListener("click", go); g.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+  });
+  document.getElementById("next").addEventListener("click", function () { select(cur + 1, true, true); });
+  document.getElementById("prev").addEventListener("click", function () { select(cur - 1, true, true); });
+  document.getElementById("nextTodo").addEventListener("click", nextTodo);
+  document.getElementById("bPace").addEventListener("click", openPace);
+  document.getElementById("bLog").addEventListener("click", openLog);
+  document.getElementById("bExport").addEventListener("click", openExport);
+  document.getElementById("bVer").addEventListener("click", openVersions);
+  document.addEventListener("keydown", function (e) {
+    var t = e.target && e.target.tagName; if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT" || !modal.hidden) return;
+    if (e.key === "ArrowRight") select(cur + 1, true, false); if (e.key === "ArrowLeft") select(cur - 1, true, false);
+  });
+
+  /* ---------- start ---------- */
+  loadLocal(); setStatus(S.ts ? "local" : "load");
+  idbOpen().then(function (d) {
+    idb = d; if (!d) return;
+    idbGetAll("snaps").then(function (a) { SN = a.concat(SN.filter(function (x) { return !a.some(function (y) { return y.id === x.id; }); })).sort(function (x, y) { return y.ts - x.ts; }); });
+    if (!S.ts) idbGetAll("state").then(function (a) { var c = a[0]; if (c && c.ts && !S.ts) { S = { v: c.v || {}, done: c.done || {}, log: c.log || [], ts: c.ts }; saveLocal(); select(cur, false, false); } });
+  });
+  select(0, false, false);
+  setStatus("local");
+  (function cloud() {
+    if (!(window.claude && window.claude.use)) return;
+    Promise.all([claude.use("user"), claude.use("db"), claude.use("downloads")]).then(function (r) {
+      downloads = r[2] || null;
+      if (!r[0] || !r[1]) return null;
+      return r[0].id().then(function (uid) {
+        if (!uid) return null;
+        dbDoc = r[1].doc("data/users/" + uid + "/review");
+        return Promise.race([dbDoc.get(), new Promise(function (_, rej) { setTimeout(function () { rej(new Error("timeout")); }, 10000); })]).then(function (snap) {
+          if (snap.exists) {
+            var d = snap.data() || {};
+            if ((d.ts || 0) > (S.ts || 0)) { S = { v: d.v || {}, done: d.done || {}, log: d.log || [], ts: d.ts }; saveLocal(); select(cur, false, false); }
+            else if (S.ts > (d.ts || 0)) scheduleSave();
+          } else if (S.ts) scheduleSave();
+          setStatus("saved");
+        });
+      });
+    }).catch(function () { dbDoc = null; setStatus("local"); });
+  })();
+})();
+</script>
+
+</body>
+</html>
