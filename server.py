@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(HERE, "annual_review.db")
 PORT = int(os.environ.get("PORT", "8765"))
-MAX = 5 * 1024 * 1024
+MAX = 25 * 1024 * 1024
 LOCK = threading.Lock()
 
 
@@ -23,6 +23,7 @@ def conn():
 
 with conn() as c:
     c.execute("CREATE TABLE IF NOT EXISTS state (id INTEGER PRIMARY KEY CHECK (id = 1), ts INTEGER, json TEXT NOT NULL)")
+    c.execute("CREATE TABLE IF NOT EXISTS photos (id TEXT PRIMARY KEY, ts INTEGER, step INTEGER, json TEXT NOT NULL)")
     c.execute("CREATE TABLE IF NOT EXISTS snaps (id TEXT PRIMARY KEY, ts INTEGER, name TEXT, json TEXT NOT NULL)")
 
 
@@ -72,6 +73,10 @@ class H(BaseHTTPRequestHandler):
             with conn() as c:
                 rows = c.execute("SELECT json FROM snaps ORDER BY ts DESC").fetchall()
             return self._send(200, ("[" + ",".join(r["json"] for r in rows) + "]").encode())
+        if p == "/api/photos":
+            with conn() as c:
+                rows = c.execute("SELECT json FROM photos ORDER BY ts").fetchall()
+            return self._send(200, ("[" + ",".join(r["json"] for r in rows) + "]").encode())
         self._send(404)
 
     def do_PUT(self):
@@ -91,7 +96,17 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self._ok_host():
             return self._send(403)
-        if self.path.split("?")[0] != "/api/snaps":
+        path = self.path.split("?")[0]
+        if path == "/api/photos":
+            try:
+                d = self._body()
+                assert isinstance(d.get("id"), str) and isinstance(d.get("data"), str) and d["data"].startswith("data:image/")
+            except Exception:
+                return self._send(400, {"error": "bad request"})
+            with LOCK, conn() as c:
+                c.execute("INSERT OR REPLACE INTO photos (id, ts, step, json) VALUES (?, ?, ?, ?)", (d["id"], int(d.get("ts") or 0), int(d.get("step") or 0), json.dumps(d)))
+            return self._send(200, {"ok": True})
+        if path != "/api/snaps":
             return self._send(404)
         try:
             d = self._body()
@@ -106,6 +121,10 @@ class H(BaseHTTPRequestHandler):
         if not self._ok_host():
             return self._send(403)
         p = self.path.split("?")[0]
+        if p.startswith("/api/photos/"):
+            with LOCK, conn() as c:
+                c.execute("DELETE FROM photos WHERE id = ?", (p.rsplit("/", 1)[1],))
+            return self._send(200, {"ok": True})
         if not p.startswith("/api/snaps/"):
             return self._send(404)
         with LOCK, conn() as c:

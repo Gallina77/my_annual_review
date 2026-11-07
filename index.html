@@ -204,6 +204,16 @@ textarea:focus, input:focus { outline: none; border-color: var(--cur); box-shado
 .stampbtn.done { background: var(--ink); color: var(--surface); border-color: var(--ink); }
 footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.55; max-width: 84ch; }
 
+/* paper mode and photos */
+.modebar { display: grid; gap: 8px; margin: 0 0 14px; }
+.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.ph { background: var(--field); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; display: grid; }
+.ph button.imgbtn { padding: 0; border: 0; background: none; cursor: zoom-in; display: block; }
+.ph img { width: 100%; max-width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+.ph input[type="text"] { border: 0; border-top: 1px solid var(--line); border-radius: 0; font-size: 13.5px; padding: 7px 8px; }
+.ph .mini { margin: 6px; justify-self: start; }
+.zoom img { max-width: 100%; border-radius: 8px; display: block; }
+
 /* modal, toast, confetti */
 .modal[hidden] { display: none; }
 .modal { position: fixed; inset: 0; z-index: 50; background: rgba(10,10,16,.55); display: grid; place-items: center; padding: 16px; }
@@ -619,10 +629,12 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
       default: return null;
     }
   }
+  function paperFrac(i) { return (PH.some(function (p) { return p.step === i; }) ? 0.6 : 0) + (filled(val("s" + i + "_ptake", "")) ? 0.4 : 0); }
   function stepFrac(i) {
     var a = [];
     STEPS[i].secs.forEach(function (sec) { sec.b.forEach(function (b) { var x = frac(b); if (x != null) a.push(x); }); });
-    return a.length ? a.reduce(function (s, x) { return s + x; }, 0) / a.length : 0;
+    var n = a.length ? a.reduce(function (s, x) { return s + x; }, 0) / a.length : 0;
+    return val("s" + i + "_mode", "digital") !== "digital" ? Math.max(n, paperFrac(i)) : n;
   }
   function stepPct(i) { return S.done[i] ? 1 : stepFrac(i); }
 
@@ -923,6 +935,56 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
     try { navigator.clipboard.writeText(text).then(ok, fail); } catch (e) { fail(); }
   }
 
+
+  /* ---------- paper notes and photos ---------- */
+  var phTimers = {};
+  function savePhoto(p) { clearTimeout(phTimers[p.id]); phTimers[p.id] = setTimeout(function () { idbPut("photos", p); }, 700); }
+  function shrink(file, max) {
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var sc = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement("canvas");
+        c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); res(c.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error("image")); };
+      img.src = url;
+    });
+  }
+  function paperBlock(i, mode) {
+    var wrap = h("div", { class: "fld" }), grid = h("div", { class: "photos" }), msg = h("div", { class: "meta" });
+    var inp = h("input", { type: "file", accept: "image/*", multiple: true, hidden: true, "aria-label": "Add photos of my notes" });
+    var take = h("textarea", { rows: 4, value: val("s" + i + "_ptake", ""), placeholder: "The lines worth keeping from my paper notes", "aria-label": "Key takeaways from my paper notes", oninput: function () { put("s" + i + "_ptake", take.value); } });
+    function draw() {
+      grid.innerHTML = "";
+      var mine = PH.filter(function (p) { return p.step === i; }).sort(function (a, b) { return a.ts - b.ts; });
+      mine.forEach(function (p) {
+        var cap = h("input", { type: "text", value: p.cap || "", placeholder: "Caption", "aria-label": "Photo caption", oninput: function () { p.cap = cap.value; savePhoto(p); } });
+        grid.appendChild(h("div", { class: "ph" },
+          h("button", { class: "imgbtn", type: "button", "aria-label": "Enlarge photo", onclick: function () { openModal("My notes", h("div", { class: "zoom" }, h("img", { src: p.data, alt: p.cap || "Photo of my notes" }))); } }, h("img", { src: p.data, alt: p.cap || "Photo of my notes", loading: "lazy" })),
+          cap,
+          h("button", { class: "mini", type: "button", text: "Remove", onclick: function () { idbDel("photos", p.id).then(function () { PH.splice(PH.indexOf(p), 1); draw(); updateProgress(); }); } })));
+      });
+      msg.textContent = mine.length ? mine.length + (mine.length === 1 ? " photo" : " photos") : "No photos yet.";
+    }
+    inp.addEventListener("change", function () {
+      var files = Array.prototype.slice.call(inp.files || []); inp.value = ""; msg.textContent = "Adding…";
+      files.reduce(function (chain, f) {
+        return chain.then(function () {
+          return shrink(f, 1600).then(function (data) {
+            var rec = { id: "p" + Date.now() + Math.random().toString(36).slice(2, 6), step: i, cap: "", ts: Date.now(), data: data };
+            PH.push(rec); return idbPut("photos", rec).then(function (ok) { if (!ok) msg.textContent = "Could not store the photo here. Use the backup file."; });
+          }, function () { msg.textContent = "That file is not a picture I can read."; });
+        });
+      }, Promise.resolve()).then(function () { draw(); updateProgress(); });
+    });
+    wrap.append(
+      h("div", { class: "callout", html: mode === "paper" ? "<b>Paper first.</b> Work in your notebook, on index cards or a big pad. Then photograph the pages and add them here, and write the few lines worth keeping below. The typed sections underneath are optional." : "<b>Both.</b> Write by hand where it feels right and type where it is faster. Add photos of your pages here, and use the sections below for anything you want to type." }),
+      h("div", { class: "meta" }, h("button", { class: "ctl small primary", type: "button", text: "Add photos", onclick: function () { inp.click(); } }), msg), inp, grid,
+      h("div", { class: "fld" }, h("label", { text: "Key takeaways from my paper notes" }), take));
+    draw(); return wrap;
+  }
+
   /* ---------- workspace ---------- */
   var panel = document.getElementById("panel");
   function renderStep(i, animate) {
@@ -930,9 +992,19 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
     panel.innerHTML = "";
     var chips = h("div", { class: "chips" }, h("span", { class: "chip", text: ph.name }), ph.time ? h("span", { class: "chip alt", text: ph.time }) : null, h("span", { class: "chip alt", text: "Step " + (i + 1) + " of 12" }));
     panel.append(chips, h("h2", { text: st.t }), h("p", { class: "summary", text: st.s }));
+    var mode = val("s" + i + "_mode", "digital");
+    panel.appendChild(h("div", { class: "modebar" }, h("span", { class: "lbl", text: "How will you work on this step?" }),
+      h("div", { class: "chipset" }, [["digital", "Digital"], ["paper", "Paper"], ["both", "Both"]].map(function (m) {
+        return h("button", { class: "chipbtn", type: "button", "aria-pressed": mode === m[0] ? "true" : "false", text: m[1], onclick: function () { put("s" + i + "_mode", m[0]); renderStep(i, false); } });
+      }))));
+    if (mode !== "digital") {
+      var pd = h("details", { class: "sec", open: true }, h("summary", { text: "My paper notes" }));
+      pd.appendChild(h("div", { class: "secbody" }, paperBlock(i, mode)));
+      panel.appendChild(pd);
+    }
     st.secs.forEach(function (sec, si) {
       var d = h("details", { class: "sec" }, h("summary", { text: sec.t }));
-      if (si === 0 || sec.open) d.setAttribute("open", "");
+      if (mode !== "paper" && (si === 0 || sec.open)) d.setAttribute("open", "");
       var body = h("div", { class: "secbody" });
       sec.b.forEach(function (b) { body.appendChild(R[b.kind](b)); });
       d.appendChild(body); panel.appendChild(d);
@@ -1035,7 +1107,8 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
   function exportMd() {
     var out = "# My Annual Review\n\n";
     STEPS.forEach(function (st, i) {
-      var body = "";
+      var body = "", pt = val("s" + i + "_ptake", ""), pn = PH.filter(function (x) { return x.step === i; }).length;
+      if (filled(pt) || pn) body += "### Paper notes\n\n" + (pn ? "(" + pn + " photo" + (pn === 1 ? "" : "s") + " of handwritten notes kept in the workbook)\n\n" : "") + (filled(pt) ? pt.trim() + "\n\n" : "");
       st.secs.forEach(function (sec) { var sb = sec.b.map(expBlock).filter(Boolean).join("\n\n"); if (sb) body += "### " + sec.t + "\n\n" + sb + "\n\n"; });
       if (body || S.done[i]) out += "## " + (i + 1) + ". " + st.t + (S.done[i] ? " (done)" : "") + "\n\n" + body;
     });
@@ -1051,23 +1124,23 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
   }
 
   /* ---------- local database (IndexedDB), versions, backup file ---------- */
-  var idb = null, SN = [];
+  var idb = null, SN = [], PH = [];
   function idbOpen() {
     return new Promise(function (res) {
       try {
-        var r = indexedDB.open("annual-review", 1);
-        r.onupgradeneeded = function () { var d = r.result; d.createObjectStore("snaps", { keyPath: "id" }); d.createObjectStore("state", { keyPath: "id" }); };
+        var r = indexedDB.open("annual-review", 2);
+        r.onupgradeneeded = function () { var d = r.result; ["snaps", "state", "photos"].forEach(function (n) { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: "id" }); }); };
         r.onsuccess = function () { res(r.result); }; r.onerror = function () { res(null); }; r.onblocked = function () { res(null); };
       } catch (e) { res(null); }
     });
   }
   function idbPut(store, obj) {
-    if (API) { if (store !== "snaps") return Promise.resolve(true); return fetch("api/snaps", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) }).then(function (r) { return r.ok; }, function () { return false; }); }
+    if (API) { if (store === "state") return Promise.resolve(true); return fetch(store === "photos" ? "api/photos" : "api/snaps", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) }).then(function (r) { return r.ok; }, function () { return false; }); }
     if (!idb) return Promise.resolve(false);
     return new Promise(function (res) { try { var t = idb.transaction(store, "readwrite"); t.objectStore(store).put(obj); t.oncomplete = function () { res(true); }; t.onerror = t.onabort = function () { res(false); }; } catch (e) { res(false); } });
   }
   function idbDel(store, id) {
-    if (API) return fetch("api/snaps/" + encodeURIComponent(id), { method: "DELETE" }).then(function (r) { return r.ok; }, function () { return false; });
+    if (API) return fetch((store === "photos" ? "api/photos/" : "api/snaps/") + encodeURIComponent(id), { method: "DELETE" }).then(function (r) { return r.ok; }, function () { return false; });
     if (!idb) return Promise.resolve(false);
     return new Promise(function (res) { try { var t = idb.transaction(store, "readwrite"); t.objectStore(store).delete(id); t.oncomplete = function () { res(true); }; t.onerror = t.onabort = function () { res(false); }; } catch (e) { res(false); } });
   }
@@ -1121,7 +1194,8 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
           if (!j || j.app !== "annual-review" || !j.current || typeof j.current.v !== "object") throw new Error("not a backup");
           snapshot("Before import " + fmtDate(Date.now())).then(function () {
             var add = (j.snaps || []).filter(function (x) { return x && x.id && x.data && !SN.some(function (y) { return y.id === x.id; }); });
-            return Promise.all(add.map(function (x) { SN.push(x); return idbPut("snaps", x); }));
+            var padd = (j.photos || []).filter(function (x) { return x && x.id && x.data && !PH.some(function (y) { return y.id === x.id; }); });
+            return Promise.all(add.map(function (x) { SN.push(x); return idbPut("snaps", x); }).concat(padd.map(function (x) { PH.push(x); return idbPut("photos", x); })));
           }).then(function () { SN.sort(function (a, b) { return b.ts - a.ts; }); applyData(j.current); say("Backup imported. Your previous answers are saved as a version."); drawList(); });
         } catch (e) { say("That file is not an Annual Review backup."); }
       };
@@ -1132,8 +1206,8 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
       h("div", { class: "fld" }, h("label", { text: "Save a version of how things stand now" }), nm,
         h("div", null, h("button", { class: "ctl primary small", type: "button", text: "Save version", onclick: function () { var n = nm.value.trim() || "Review " + today(); snapshot(n).then(function (ok) { say(ok ? "Saved “" + n + "”" : "Could not store it here. Use the backup file."); drawList(); }); } }))),
       listEl,
-      h("div", { class: "callout", html: "<b>Backup file.</b> One JSON file with your current answers and all versions. Importing a file replaces your current answers (after saving them as a version)." }),
-      h("div", { class: "meta" }, h("button", { class: "ctl small", type: "button", text: "Download backup", onclick: function () { saveFile("annual-review-backup-" + today() + ".json", JSON.stringify({ app: "annual-review", version: 2, current: { v: S.v, done: S.done, log: S.log }, snaps: SN }, null, 2), say); } })),
+      h("div", { class: "callout", html: "<b>Backup file.</b> One JSON file with your current answers and all versions. Photos are included. Importing a file replaces your current answers (after saving them as a version)." }),
+      h("div", { class: "meta" }, h("button", { class: "ctl small", type: "button", text: "Download backup", onclick: function () { saveFile("annual-review-backup-" + today() + ".json", JSON.stringify({ app: "annual-review", version: 2, current: { v: S.v, done: S.done, log: S.log }, snaps: SN, photos: PH }, null, 2), say); } })),
       h("div", { class: "fld" }, h("label", { text: "Restore from a backup file" }), file), msg);
     drawList(); openModal("Versions and backup", wrap);
   }
@@ -1172,6 +1246,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
   loadLocal(); setStatus(S.ts ? "local" : "load");
   idbOpen().then(function (d) {
     idb = d; if (!d) return;
+    idbGetAll("photos").then(function (a) { if (API || !a.length) return; PH = a; select(cur, false, false); });
     idbGetAll("snaps").then(function (a) { if (API) return; SN = a.concat(SN.filter(function (x) { return !a.some(function (y) { return y.id === x.id; }); })).sort(function (x, y) { return y.ts - x.ts; }); });
     if (!S.ts) idbGetAll("state").then(function (a) { var c = a[0]; if (c && c.ts && !S.ts) { S = { v: c.v || {}, done: c.done || {}, log: c.log || [], ts: c.ts }; saveLocal(); select(cur, false, false); } });
   });
@@ -1185,7 +1260,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
       else if (S.ts > ts) apiPut();
       setStatus("db");
       return fetch("api/snaps").then(function (r) { return r.json(); });
-    }).then(function (a) { SN = a.sort(function (x, y) { return y.ts - x.ts; }); }).catch(function () {});
+    }).then(function (a) { SN = a.sort(function (x, y) { return y.ts - x.ts; }); return fetch("api/photos").then(function (r) { return r.json(); }); }).then(function (a) { PH = a; select(cur, false, false); }).catch(function () {});
   })();
   (function cloud() {
     if (!(window.claude && window.claude.use)) return;
