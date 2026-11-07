@@ -577,19 +577,24 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
   /* ---------- state + saving ---------- */
   var LS = "annual-review-v2";
   var S = { v: {}, done: {}, log: [], ts: 0 };
-  var dbDoc = null, downloads = null, saving = false, dirty = false, saveTimer = null, cur = 0;
+  var API = false, dbDoc = null, downloads = null, saving = false, dirty = false, saveTimer = null, cur = 0;
   function loadLocal() { try { var r = localStorage.getItem(LS); if (r) { var d = JSON.parse(r); S = { v: d.v || {}, done: d.done || {}, log: d.log || [], ts: d.ts || 0 }; } } catch (e) {} }
   function saveLocal() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} idbPut("state", { id: "current", v: S.v, done: S.done, log: S.log, ts: S.ts }); }
   function setStatus(s) {
-    var t = { pending: "Saving…", saved: "Saved to your private space", local: "Saved on this device", load: "Loading" };
+    var t = { pending: "Saving…", saved: "Saved to your private space", local: "Saved on this device", db: "Saved to your local database", load: "Loading" };
     document.getElementById("saveState").textContent = t[s] || "";
   }
   function val(k, d) { return Object.prototype.hasOwnProperty.call(S.v, k) ? S.v[k] : d; }
   function put(k, x) { S.v[k] = x; touch(); }
   function touch() { S.ts = Date.now(); updateProgress(); scheduleSave(); }
-  function scheduleSave() { saveLocal(); setStatus(dbDoc ? "pending" : "local"); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 1200); }
+  function scheduleSave() { saveLocal(); setStatus(dbDoc || API ? "pending" : "local"); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 1200); }
+  function apiPut() {
+    if (!API) return;
+    fetch("api/state", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ v: S.v, done: S.done, log: S.log, ts: S.ts }) }).then(function (r) { setStatus(r.ok ? "db" : "local"); }, function () { setStatus("local"); });
+  }
   function flush() {
-    if (!dbDoc) { setStatus("local"); return; }
+    apiPut();
+    if (!dbDoc) { if (!API) setStatus("local"); return; }
     if (saving) { dirty = true; return; }
     saving = true;
     dbDoc.set({ v: S.v, done: S.done, log: S.log, ts: S.ts }).then(function () { setStatus("saved"); }, function () { setStatus("local"); }).then(function () { saving = false; if (dirty) { dirty = false; flush(); } });
@@ -1057,10 +1062,12 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
     });
   }
   function idbPut(store, obj) {
+    if (API) { if (store !== "snaps") return Promise.resolve(true); return fetch("api/snaps", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(obj) }).then(function (r) { return r.ok; }, function () { return false; }); }
     if (!idb) return Promise.resolve(false);
     return new Promise(function (res) { try { var t = idb.transaction(store, "readwrite"); t.objectStore(store).put(obj); t.oncomplete = function () { res(true); }; t.onerror = t.onabort = function () { res(false); }; } catch (e) { res(false); } });
   }
   function idbDel(store, id) {
+    if (API) return fetch("api/snaps/" + encodeURIComponent(id), { method: "DELETE" }).then(function (r) { return r.ok; }, function () { return false; });
     if (!idb) return Promise.resolve(false);
     return new Promise(function (res) { try { var t = idb.transaction(store, "readwrite"); t.objectStore(store).delete(id); t.oncomplete = function () { res(true); }; t.onerror = t.onabort = function () { res(false); }; } catch (e) { res(false); } });
   }
@@ -1084,7 +1091,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
     function say(t) { msg.textContent = t; }
     function drawList() {
       listEl.innerHTML = "";
-      if (!idb) listEl.appendChild(h("p", { class: "meta", text: "This browser does not allow local storage for versions here. Use the backup file below." }));
+      if (!idb && !API) listEl.appendChild(h("p", { class: "meta", text: "This browser does not allow local storage for versions here. Use the backup file below." }));
       else if (!SN.length) listEl.appendChild(h("p", { class: "meta", text: "No versions yet. Save one to freeze today's answers, for example at the end of each review year." }));
       SN.forEach(function (o, i) {
         var st = snapStats(o), ask = false, box = h("div", { class: "meta" });
@@ -1121,7 +1128,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
       rd.readAsText(f);
     });
     wrap.append(
-      h("p", { class: "summary", text: "Versions are frozen copies of your answers, stored in this browser's local database on this device. Use the backup file if you want to keep them elsewhere or move to another device." }),
+      h("p", { class: "summary", text: "Versions are frozen copies of your answers, stored in " + (API ? "your local database file (annual_review.db)" : "this browser's local database on this device") + ". Use the backup file if you want to keep them elsewhere or move to another device." }),
       h("div", { class: "fld" }, h("label", { text: "Save a version of how things stand now" }), nm,
         h("div", null, h("button", { class: "ctl primary small", type: "button", text: "Save version", onclick: function () { var n = nm.value.trim() || "Review " + today(); snapshot(n).then(function (ok) { say(ok ? "Saved “" + n + "”" : "Could not store it here. Use the backup file."); drawList(); }); } }))),
       listEl,
@@ -1165,11 +1172,21 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
   loadLocal(); setStatus(S.ts ? "local" : "load");
   idbOpen().then(function (d) {
     idb = d; if (!d) return;
-    idbGetAll("snaps").then(function (a) { SN = a.concat(SN.filter(function (x) { return !a.some(function (y) { return y.id === x.id; }); })).sort(function (x, y) { return y.ts - x.ts; }); });
+    idbGetAll("snaps").then(function (a) { if (API) return; SN = a.concat(SN.filter(function (x) { return !a.some(function (y) { return y.id === x.id; }); })).sort(function (x, y) { return y.ts - x.ts; }); });
     if (!S.ts) idbGetAll("state").then(function (a) { var c = a[0]; if (c && c.ts && !S.ts) { S = { v: c.v || {}, done: c.done || {}, log: c.log || [], ts: c.ts }; saveLocal(); select(cur, false, false); } });
   });
   select(0, false, false);
   setStatus("local");
+  (function apiInit() {
+    if (!/^https?:$/.test(location.protocol) || !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return;
+    fetch("api/state").then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (d) {
+      API = true; var ts = (d && d.ts) || 0;
+      if (ts > (S.ts || 0)) { S = { v: d.v || {}, done: d.done || {}, log: d.log || [], ts: ts }; saveLocal(); select(cur, false, false); }
+      else if (S.ts > ts) apiPut();
+      setStatus("db");
+      return fetch("api/snaps").then(function (r) { return r.json(); });
+    }).then(function (a) { SN = a.sort(function (x, y) { return y.ts - x.ts; }); }).catch(function () {});
+  })();
   (function cloud() {
     if (!(window.claude && window.claude.use)) return;
     Promise.all([claude.use("user"), claude.use("db"), claude.use("downloads")]).then(function (r) {
