@@ -133,8 +133,15 @@ class H(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    srv = ThreadingHTTPServer(("127.0.0.1", PORT), H)
     url = "http://localhost:%d" % PORT
+    try:
+        srv = ThreadingHTTPServer(("127.0.0.1", PORT), H)
+    except OSError:
+        print("Port %d is already in use. The workbook is probably already running." % PORT)
+        print("Opening it in your browser:", url)
+        if "--no-open" not in sys.argv:
+            webbrowser.open(url)
+        sys.exit(0)
     print("My Annual Review running at", url)
     print("Database file:", DB)
     print("Press Ctrl+C to stop.")
