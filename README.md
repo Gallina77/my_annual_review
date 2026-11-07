@@ -34,6 +34,8 @@ Open `index.html` directly. Answers then save in the browser (localStorage and I
 - **Linking between steps**: gratitude items, excitement topics, portrait lines and resonance-log entries can be pulled into the project board (as "Ideas to sort"), the portrait step and the annual letter.
 - **Focus timer** under the wheel (25/50/90 minute blocks with breaks). Focus time is logged per phase against the template's 8-hour plan.
 - **Recap** button: a one-page card with your word of the year, top gratitudes, chosen projects and principles. Copy it as text or save it as a file.
+- **Favourite gratitudes**: star the items that mean most. The recap shows starred items first.
+- **Start next year's review** (in Versions or the Recap): saves this review as a version, clears the workbook, and shows last year's highlights in the first steps. Photos stay with the review they belong to.
 - **Versions** button: save named snapshots (for example one per year) and restore them.
 - **Backup file**: download or import all answers and versions as one JSON file.
 

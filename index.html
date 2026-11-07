@@ -47,14 +47,14 @@ body{margin:0}
   --p3: #ff8396; --p3-fg: #2a0710; --p4: #bb95f6; --p4-fg: #1a0b33;
 }
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); }
-.page { max-width: 1240px; margin: 0 auto; padding-block: 26px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.page { max-width: 1560px; margin: 0 auto; padding-block: 26px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 header { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 22px; }
 .eyebrow { font: 600 12px/1 var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
 h1 { font: 700 clamp(26px, 4vw, 38px)/1.1 var(--font-display); margin: 0 0 8px; text-wrap: balance; }
 .lede { margin: 0; color: var(--muted); max-width: 60ch; font-size: 16px; line-height: 1.55; }
 .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .save { font: 500 12px/1 var(--font-display); color: var(--muted); padding: 0 6px; }
-.layout { display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: 32px; align-items: start; }
+.layout { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: clamp(32px, 5vw, 72px); align-items: start; }
 @media (max-width: 880px) { .layout { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
 @media (min-width: 881px) and (min-height: 960px) { .wheel-wrap { position: sticky; top: 12px; } }
 
@@ -120,14 +120,14 @@ svg.wheel { width: 100%; height: auto; display: block; max-width: 640px; margin:
 .dot.on { transform: scale(1.4); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pc) 30%, transparent); }
 
 /* workspace */
-.panel { background: var(--surface); border: 1px solid color-mix(in srgb, var(--cur) 45%, var(--line)); border-radius: 12px; padding: 24px 24px 20px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid color-mix(in srgb, var(--cur) 45%, var(--line)); border-radius: 12px; padding: 30px 36px 26px; min-width: 0; }
 .panel.swap { animation: swap .35s ease; }
 @keyframes swap { from { opacity: 0; transform: translateY(8px); } }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .chip { font: 600 11.5px/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; padding: 7px 10px; border-radius: 4px; background: var(--cur); color: var(--cur-fg); }
 .chip.alt { background: transparent; color: var(--muted); border: 1px solid var(--line); }
 .panel h2 { font: 700 clamp(24px, 3.2vw, 31px)/1.12 var(--font-display); margin: 0 0 10px; text-wrap: balance; }
-.summary { margin: 0 0 18px; font-size: 16.5px; line-height: 1.6; max-width: 62ch; color: var(--muted); }
+.summary { margin: 0 0 20px; font-size: 16.5px; line-height: 1.6; max-width: 70ch; color: var(--muted); }
 details.sec { border-top: 1px solid var(--line); padding: 4px 0; }
 details.sec > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 12px 0; font: 600 15px/1.2 var(--font-display); }
 details.sec > summary::-webkit-details-marker { display: none; }
@@ -213,6 +213,21 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
 .ph input[type="text"] { border: 0; border-top: 1px solid var(--line); border-radius: 0; font-size: 13.5px; padding: 7px 8px; }
 .ph .mini { margin: 6px; justify-self: start; }
 .zoom img { max-width: 100%; border-radius: 8px; display: block; }
+
+/* favourites, last year */
+.row.fav { grid-template-columns: 28px minmax(0, 1fr) 36px; }
+.star { border: 0; background: none; padding: 6px; cursor: pointer; color: var(--muted); border-radius: 8px; display: grid; place-items: center; transition: transform .2s, color .2s; }
+.star:hover { transform: scale(1.18) rotate(-8deg); color: var(--ink); }
+.star:focus-visible { outline: 2px solid var(--cur); outline-offset: 2px; }
+.star svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.star[aria-pressed="true"] { color: var(--p1); }
+.star[aria-pressed="true"] svg { fill: currentColor; }
+details.lastyear { background: color-mix(in srgb, var(--cur) 8%, var(--surface)); border: 1px dashed color-mix(in srgb, var(--cur) 55%, var(--line)); border-radius: 8px; padding: 10px 14px; }
+details.lastyear > summary { cursor: pointer; font: 600 14px/1.3 var(--font-display); }
+details.lastyear .ly { display: grid; gap: 8px; padding-top: 10px; font-size: 15px; line-height: 1.5; }
+details.lastyear .ly p { margin: 0; overflow-wrap: anywhere; }
+details.lastyear .ly ul { margin: 2px 0 0; padding-left: 20px; }
+@media (prefers-reduced-motion: reduce) { .star { transition: none !important; } }
 
 /* timer */
 .timer { margin-top: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 10px; max-width: 640px; margin-inline: auto; }
@@ -375,6 +390,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
       s: "Set your intention, protect your time, pick a place, build a soundtrack and gather your materials. Even partial preparation beats none.",
       secs: [
         { t: "Set your intention", b: [
+          { kind: "lastyear" },
           { kind: "prompt", k: "feel", q: "What is your emotional state right now?" },
           { kind: "prompt", k: "area", q: "Which area of life or work most needs your attention?" },
           { kind: "prompt", k: "clar", q: "Where do you most want clarity or freedom?" },
@@ -413,6 +429,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
       s: "Scan the year like a curator, looking for highlights and low points. You do not need to read everything.",
       secs: [
         { t: "What to look through", b: [
+          { kind: "lastyear" },
           { kind: "check", k: "scan", items: ["Calendar, a week or a month at a time", "Photos, starting with your favorites", "Journal entries and notes", "Reading highlights, bookmarks and saved quotes", "Last year's goals and finished projects", "Books, podcasts, films and videos that shaped you"] }
         ] },
         { t: "Questions to ask as you go", b: [
@@ -429,7 +446,8 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
           { kind: "spark", groups: SPARK_PAST }
         ] },
         { t: "My gratitude list", open: true, b: [
-          { kind: "list", k: "grat", n: 10, target: 20, ph: "I am grateful for...", heart: true },
+          { kind: "info", body: "Tap the star next to the ones that mean the most. Your recap shows these first." },
+          { kind: "list", k: "grat", n: 10, target: 20, ph: "I am grateful for...", heart: true, fav: true },
           { kind: "prompt", k: "thank", q: "Someone on my list I will reach out to and thank" },
           { kind: "prompt", k: "relg", q: "What I notice about my relationship to gratitude" }
         ] }
@@ -522,6 +540,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
       s: "A project turns a vague wish into something concrete. “Finish a 30-day walking challenge” is a project. “Health” is not.",
       secs: [
         { t: "Sort your projects", open: true, b: [
+          { kind: "lastyear" },
           { kind: "info", body: "List what is already on your plate, then prune from the bottom. <b>No longer aligned:</b> cancel, pause or postpone. <b>Stretched:</b> shrink it, set a deadline or hand it off. <b>Want it, but not now:</b> someday/maybe. Then add new ideas from your portrait, backcast, gratitude list and excitement map." },
           { kind: "board", k: "board" }
         ] },
@@ -658,7 +677,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
       default: return null;
     }
   }
-  function paperFrac(i) { return (PH.some(function (p) { return p.step === i; }) ? 0.6 : 0) + (filled(val("s" + i + "_ptake", "")) ? 0.4 : 0); }
+  function paperFrac(i) { return (phFor(i).length ? 0.6 : 0) + (filled(val("s" + i + "_ptake", "")) ? 0.4 : 0); }
   function stepFrac(i) {
     var a = [];
     STEPS[i].secs.forEach(function (sec) { sec.b.forEach(function (b) { var x = frac(b); if (x != null) a.push(x); }); });
@@ -739,6 +758,11 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
     function row(i) {
       var num = h("span", { class: "num" + (b.heart ? " heart" : "") + (filled(arr[i]) ? " on" : "") }, b.heart ? heartIcon() : String(i + 1));
       var inp = h("input", { type: "text", value: arr[i], placeholder: b.ph || "", oninput: function () { arr[i] = inp.value; num.classList.toggle("on", filled(inp.value)); put(b.key, arr.slice()); count(); } });
+      if (b.fav) {
+        var fk = b.key + "_fav", st = h("button", { class: "star", type: "button", title: "Favourite", "aria-label": "Mark as favourite", "aria-pressed": val(fk, {})[i] ? "true" : "false", onclick: function () { var c = Object.assign({}, val(fk, {})); c[i] = !c[i]; put(fk, c); st.setAttribute("aria-pressed", c[i] ? "true" : "false"); } });
+        var si = sv("svg", { viewBox: "0 0 24 24" }); si.appendChild(sv("path", { d: "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" })); st.appendChild(si);
+        return h("div", { class: "row fav" }, num, inp, st);
+      }
       return h("div", { class: "row" }, num, inp);
     }
     function draw() { rowsEl.innerHTML = ""; arr.forEach(function (_, i) { rowsEl.appendChild(row(i)); }); count(); }
@@ -999,7 +1023,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
     var take = h("textarea", { rows: 4, value: val("s" + i + "_ptake", ""), placeholder: "The lines worth keeping from my paper notes", "aria-label": "Key takeaways from my paper notes", oninput: function () { put("s" + i + "_ptake", take.value); } });
     function draw() {
       grid.innerHTML = "";
-      var mine = PH.filter(function (p) { return p.step === i; }).sort(function (a, b) { return a.ts - b.ts; });
+      var mine = phFor(i).sort(function (a, b) { return a.ts - b.ts; });
       mine.forEach(function (p) {
         var cap = h("input", { type: "text", value: p.cap || "", placeholder: "Caption", "aria-label": "Photo caption", oninput: function () { p.cap = cap.value; savePhoto(p); } });
         grid.appendChild(h("div", { class: "ph" },
@@ -1014,7 +1038,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
       files.reduce(function (chain, f) {
         return chain.then(function () {
           return shrink(f, 1600).then(function (data) {
-            var rec = { id: "p" + Date.now() + Math.random().toString(36).slice(2, 6), step: i, cap: "", ts: Date.now(), data: data };
+            var rec = { id: "p" + Date.now() + Math.random().toString(36).slice(2, 6), step: i, cap: "", ts: Date.now(), rev: val("rev", "r0"), data: data };
             PH.push(rec); return idbPut("photos", rec).then(function (ok) { if (!ok) msg.textContent = "Could not store the photo here. Use the backup file."; });
           }, function () { msg.textContent = "That file is not a picture I can read."; });
         });
@@ -1149,7 +1173,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
   function exportMd() {
     var out = "# My Annual Review\n\n";
     STEPS.forEach(function (st, i) {
-      var body = "", pt = val("s" + i + "_ptake", ""), pn = PH.filter(function (x) { return x.step === i; }).length;
+      var body = "", pt = val("s" + i + "_ptake", ""), pn = phFor(i).length;
       if (filled(pt) || pn) body += "### Paper notes\n\n" + (pn ? "(" + pn + " photo" + (pn === 1 ? "" : "s") + " of handwritten notes kept in the workbook)\n\n" : "") + (filled(pt) ? pt.trim() + "\n\n" : "");
       st.secs.forEach(function (sec) { var sb = sec.b.map(expBlock).filter(Boolean).join("\n\n"); if (sb) body += "### " + sec.t + "\n\n" + sb + "\n\n"; });
       if (body || S.done[i]) out += "## " + (i + 1) + ". " + st.t + (S.done[i] ? " (done)" : "") + "\n\n" + body;
@@ -1251,7 +1275,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
       h("div", { class: "callout", html: "<b>Backup file.</b> One JSON file with your current answers and all versions. Photos are included. Importing a file replaces your current answers (after saving them as a version)." }),
       h("div", { class: "meta" }, h("button", { class: "ctl small", type: "button", text: "Download backup", onclick: function () { saveFile("annual-review-backup-" + today() + ".json", JSON.stringify({ app: "annual-review", version: 2, current: { v: S.v, done: S.done, log: S.log }, snaps: SN, photos: PH }, null, 2), say); } })),
       h("div", { class: "fld" }, h("label", { text: "Restore from a backup file" }), file), msg);
-    drawList(); openModal("Versions and backup", wrap);
+    wrap.insertBefore(newReviewBlock(say), msg); drawList(); openModal("Versions and backup", wrap);
   }
   function saveFile(name, text, say) {
     if (!downloads) { say("Saving files is not available here. Copy from Export instead."); return; }
@@ -1267,7 +1291,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
   /* ---------- linking between steps ---------- */
   function sentences(t) { return String(t || "").split(/(?<=[.!?])\s+|\n+/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length >= 25; }).slice(0, 16); }
   function srcItems(n) {
-    if (n === "grat") return val("s2_grat", []).filter(filled).map(function (t) { return { t: t.trim() }; });
+    if (n === "grat") { var fv = val("s2_grat_fav", {}); return val("s2_grat", []).map(function (t, i) { return { t: (t || "").trim(), f: !!fv[i] }; }).filter(function (x) { return x.t; }).sort(function (x, y) { return (y.f ? 1 : 0) - (x.f ? 1 : 0); }); }
     if (n === "excite") return val("s5_map", []).filter(function (r) { return filled(r.t); }).map(function (r) { return { t: r.t.trim() + (filled(r.w) ? ": " + r.w.trim() : "") }; });
     if (n === "portrait") return sentences(val("s7_portrait", "")).map(function (t) { return { t: t }; });
     if (n === "today") return sentences((val("s8_tl", {}).now || {}).x).map(function (t) { return { t: t }; });
@@ -1381,7 +1405,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
     var rows = ["Mid-year check-in", "Quarterly check-in", "Monthly check-in"];
     return {
       year: new Date().getFullYear(), word: tr(val("s7_word", "")), oq: tr(val("s7_oq", "")), touch: tr(val("s0_touch", "")),
-      grat: val("s2_grat", []).filter(filled).map(tr).slice(0, 7),
+      grat: gratTop(),
       proj: val("s9_board", []).filter(function (r) { return r.b === "active"; }).map(function (r) { return r.n + (filled(r.o) ? ": " + r.o : ""); }).slice(0, 10),
       prin: pr.sel.filter(function (i) { return filled(pr.t[i]); }).map(function (i) { return "On " + AREAS[i].toLowerCase() + ": " + tr(pr.t[i]); }),
       letgo: tr(val("s10_letgo", "")),
@@ -1417,8 +1441,52 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
         grid, any ? null : h("p", { class: "meta", text: "Fill in your word, gratitude list, projects and principles, and they appear here." })));
     var acts = h("div", { class: "meta" }, h("button", { class: "ctl small primary", type: "button", text: "Copy as text", onclick: function () { copyText(recapText(d), msg); } }));
     if (downloads) acts.appendChild(h("button", { class: "ctl small", type: "button", text: "Save as file", onclick: function () { saveFile("my-annual-review-" + d.year + "-recap.md", recapText(d), function (t) { msg.textContent = t; }); } }));
+    acts.appendChild(h("button", { class: "ctl small", type: "button", text: "Start next year's review", onclick: function () { closeModal(); openVersions(); } }));
     acts.appendChild(msg);
     openModal("My year recap", h("div", { class: "fld" }, card, acts), true);
+  }
+
+
+  /* ---------- favourites, photos per review, next year ---------- */
+  function gratTop() {
+    var gl = val("s2_grat", []), fv = val("s2_grat_fav", {}), fav = [], all = [];
+    gl.forEach(function (t, i) { if (!filled(t)) return; all.push(t.trim()); if (fv[i]) fav.push(t.trim()); });
+    return (fav.length ? fav : all).slice(0, 7);
+  }
+  function phFor(i) { var r = val("rev", "r0"); return PH.filter(function (p) { return p.step === i && (p.rev || "r0") === r; }); }
+  function prevOf() {
+    var d = recapData();
+    return { year: d.year, word: d.word, oq: d.oq, touch: d.touch, intent: (val("s0_int", "") || "").trim(), grat: d.grat.slice(0, 5), proj: d.proj, prin: d.prin, letgo: d.letgo, headed: trunc((val("s10_headed", "") || "").trim(), 500) };
+  }
+  R.lastyear = function () {
+    var pv = val("prevs", [])[0]; if (!pv) return document.createDocumentFragment();
+    var ly = h("div", { class: "ly" });
+    function line(label, text) { if (filled(text)) ly.appendChild(h("p", null, h("b", { text: label + ". " }), text)); }
+    function list(label, a) { if (a && a.length) ly.appendChild(h("div", null, h("b", { text: label + "." }), h("ul", null, a.map(function (x) { return h("li", { text: x }); })))); }
+    line("Word of the year", pv.word); line("Open question", pv.oq); line("Touchstone", pv.touch); line("Intention", pv.intent);
+    list("Grateful for", pv.grat); list("Projects I chose", pv.proj); list("How I wanted to live", pv.prin); line("Letting go of", pv.letgo); line("Where I was headed", pv.headed);
+    if (!ly.childNodes.length) ly.appendChild(h("p", { text: "That review has no highlights saved. Open it from Versions if you want to look inside." }));
+    var more = val("prevs", []).length - 1;
+    if (more > 0) ly.appendChild(h("p", { class: "meta", text: more + (more === 1 ? " earlier review is" : " earlier reviews are") + " kept as versions." }));
+    return h("details", { class: "lastyear" }, h("summary", { text: "Last year's review (" + pv.year + ")" }), ly);
+  };
+  function newReviewBlock(say) {
+    var box = h("div", { class: "callout" });
+    function start() {
+      var prev = prevOf(), olds = val("prevs", []);
+      snapshot("Review " + prev.year + " (finished)").then(function (ok) {
+        if (!ok) { say("Could not store the version in this browser, so nothing was cleared. Download a backup first."); return; }
+        S = { v: { timer_set: val("timer_set", { f: 50, b: 10, s: true }), prevs: [prev].concat(olds).slice(0, 10), rev: "r" + Date.now() }, done: {}, log: [], ts: Date.now() };
+        saveLocal(); scheduleSave(); closeModal(); select(0, true, true); toast("New review started. Last year's highlights show in the first steps.");
+      });
+    }
+    function draw(ask) {
+      box.innerHTML = "";
+      box.append(h("b", { text: "Start next year's review" }), h("p", { style: "margin:6px 0 10px", text: "Saves this review as a version, clears the workbook for a fresh start, and keeps this year's highlights visible as context in the first steps. Your photos stay with the saved review." }));
+      if (!ask) box.appendChild(h("button", { class: "ctl small", type: "button", text: "Start a new review", onclick: function () { draw(true); } }));
+      else box.appendChild(h("div", { class: "meta" }, h("span", { text: "This review stays safe in its version. Continue?" }), h("button", { class: "ctl small primary", type: "button", text: "Yes, start fresh", onclick: start }), h("button", { class: "mini", type: "button", text: "Cancel", onclick: function () { draw(false); } })));
+    }
+    draw(false); return box;
   }
 
   /* ---------- events ---------- */
