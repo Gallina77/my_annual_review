@@ -56,7 +56,7 @@ h1 { font: 700 clamp(26px, 4vw, 38px)/1.1 var(--font-display); margin: 0 0 8px; 
 .save { font: 500 12px/1 var(--font-display); color: var(--muted); padding: 0 6px; }
 .layout { display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: 32px; align-items: start; }
 @media (max-width: 880px) { .layout { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
-@media (min-width: 881px) { .wheel-wrap { position: sticky; top: 12px; } }
+@media (min-width: 881px) and (min-height: 960px) { .wheel-wrap { position: sticky; top: 12px; } }
 
 /* buttons and chips */
 button { font-family: inherit; color: inherit; }
@@ -214,6 +214,27 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
 .ph .mini { margin: 6px; justify-self: start; }
 .zoom img { max-width: 100%; border-radius: 8px; display: block; }
 
+/* timer */
+.timer { margin-top: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 10px; max-width: 640px; margin-inline: auto; }
+.tm-top { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.tm-time { font: 700 34px/1 var(--font-display); font-variant-numeric: tabular-nums; min-width: 4.6ch; }
+.tm-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.tm-opt { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+/* recap */
+.recap { border-radius: 14px; overflow: hidden; background: var(--bg); border: 1px solid var(--line); }
+.rbar { display: grid; grid-template-columns: repeat(5, 1fr); height: 10px; }
+.rbar i { background: var(--pc); }
+.rbody { padding: 22px; display: grid; gap: 20px; }
+.rword { font: 700 clamp(34px, 7vw, 56px)/1.05 var(--font-display); overflow-wrap: anywhere; }
+.rq { font-style: italic; font-size: 18px; line-height: 1.45; margin: 0; }
+.rgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 600px) { .rgrid { grid-template-columns: minmax(0, 1fr); } }
+.rsec { border-left: 4px solid var(--pc); padding-left: 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.rsec h4 { font: 600 12px/1.2 var(--font-display); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.rsec ul, .rsec ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; line-height: 1.5; font-size: 16px; }
+.rsec p { margin: 0; line-height: 1.5; font-size: 16px; overflow-wrap: anywhere; }
+.sheet.wide { width: min(880px, 100%); }
+
 /* modal, toast, confetti */
 .modal[hidden] { display: none; }
 .modal { position: fixed; inset: 0; z-index: 50; background: rgba(10,10,16,.55); display: grid; place-items: center; padding: 16px; }
@@ -250,6 +271,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
     <div class="tools">
       <button class="ctl small" id="bPace" type="button">PACE principles</button>
       <button class="ctl small" id="bLog" type="button">Resonance log</button>
+      <button class="ctl small" id="bRecap" type="button">Recap</button>
       <button class="ctl small" id="bVer" type="button">Versions</button>
       <button class="ctl small" id="bExport" type="button">Export</button>
       <span class="save" id="saveState" role="status">Loading</span>
@@ -265,6 +287,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
         <button class="ctl primary" id="nextTodo" type="button">Next unfinished</button>
         <button class="ctl" id="next" type="button">Next</button>
       </div>
+      <div class="timer" id="timer"></div>
     </section>
     <section class="panel" id="panel" aria-live="polite"></section>
   </div>
@@ -362,6 +385,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
         { t: "Protect your time", b: [
           { kind: "info", body: "<b>About 8 hours in total.</b> Take one full day, two half days, or an hour each evening for a week." },
           { kind: "sched", k: "sched", n: 5 },
+          { kind: "timelog" },
           { kind: "check", k: "timec", items: ["Tell family or housemates your plans", "Arrange childcare if you need it"] }
         ] },
         { t: "Choose your space", b: [
@@ -471,11 +495,13 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
           { kind: "pick", k: "hor", q: "How far ahead?", opts: ["1 to 3 years (first time)", "3 to 5 years", "5 to 10 years or more"] },
           { kind: "text", k: "hordate", q: "The date I am imagining" },
           { kind: "prompt", k: "focus", q: "Which area of life do I most want to change? (Your dissatisfaction journaling can help.)" },
-          { kind: "prompt", k: "fromlog", q: "Notes from my resonance log to draw on" }
+          { kind: "prompt", k: "fromlog", q: "Notes from my resonance log to draw on" },
+          { kind: "pull", from: ["log"], target: "s7_fromlog", label: "Add an entry from my resonance log" }
         ] },
         { t: "Write the portrait", open: true, b: [
           { kind: "info", body: "Write as if it is already true. Include senses and feelings. Do not limit yourself to what feels achievable. A few paragraphs is plenty. If you draw a blank, ask what your wisest friend would imagine for you, and what you dreamed about before you grew realistic." },
           { kind: "spark", groups: SPARK_FUTURE },
+          { kind: "pull", from: ["excite", "grat", "log"], target: "s7_portrait", label: "Start from something that excites you, that you are grateful for, or that resonated" },
           { kind: "prompt", k: "portrait", q: "My future self-portrait", tall: true }
         ] },
         { t: "Let it simmer", b: [
@@ -506,9 +532,11 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
       secs: [
         { t: "The five parts", open: true, b: [
           { kind: "prompt", k: "been", q: "Where you have been: what happened, what surprised you, what you are most grateful for", rows: 4 },
+          { kind: "pull", from: ["grat", "log"], target: "s10_been", label: "Add from my gratitude list or resonance log" },
           { kind: "prompt", k: "letgo", q: "What you are letting go of: a habit, belief, project or old version of yourself", rows: 3 },
           { kind: "prompt", k: "stand", q: "Where you stand: what matters now, where you feel at peace, what is unresolved", rows: 4 },
-          { kind: "prompt", k: "headed", q: "Where you are headed: your vision and projects, and why they matter", rows: 4 }
+          { kind: "prompt", k: "headed", q: "Where you are headed: your vision and projects, and why they matter", rows: 4 },
+          { kind: "pull", from: ["projects", "portrait"], target: "s10_headed", label: "Add my active projects or a line from my portrait" }
         ] },
         { t: "Operating principles", b: [
           { kind: "info", body: "A principle has no deadline. It describes how you want to move through the world. Pick three to five areas that pull at you and write one sentence for each. If one sounds like a motivational poster, dig deeper." },
@@ -528,7 +556,8 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
         { t: "Close the ritual", b: [
           { kind: "pick", k: "gest", q: "How will I mark the end of my review?", multi: true, opts: ["Burn what I am letting go of", "Walk somewhere inspiring", "Sit in silence with a candle", "Toast the year", "Read my letter aloud"] },
           { kind: "prompt", k: "lg", q: "What I am letting go of" },
-          { kind: "text", k: "keep", q: "Where I will keep my letter" }
+          { kind: "text", k: "keep", q: "Where I will keep my letter" },
+          { kind: "recapbtn" }
         ] },
         { t: "1. Share your review", b: [{ kind: "prompt", k: "share", q: "Who I will share my review or letter with, and how" }] },
         { t: "2. Check in during the year", b: [
@@ -686,11 +715,11 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
   var R = {};
   R.info = function (b) { return h("div", { class: "callout", html: b.body }); };
   R.prompt = function (b) {
-    var ta = h("textarea", { rows: b.rows || 3, class: b.tall ? "tall" : "", value: val(b.key, ""), oninput: function () { put(b.key, ta.value); } });
+    var ta = h("textarea", { rows: b.rows || 3, class: b.tall ? "tall" : "", "data-k": b.key, value: val(b.key, ""), oninput: function () { put(b.key, ta.value); } });
     return fieldWrap(b.q, ta);
   };
   R.text = function (b) {
-    var inp = h("input", { type: "text", value: val(b.key, ""), oninput: function () { put(b.key, inp.value); } });
+    var inp = h("input", { type: "text", "data-k": b.key, value: val(b.key, ""), oninput: function () { put(b.key, inp.value); } });
     return fieldWrap(b.q, inp);
   };
   R.check = function (b) {
@@ -856,9 +885,10 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
     }
     draw(); return h("div", { class: "fld" }, h("div", { class: "meta", text: "Start at the horizon and work back: 1 halfway, 2 quarter, 3 today. Tap a number." }), wrap, ed);
   };
-  var COLS = [["active", "Active"], ["shrink", "Shrink or hand off"], ["later", "Someday / maybe"], ["cut", "Dropped"]];
+  var COLS = [["idea", "Ideas to sort"], ["active", "Active"], ["shrink", "Shrink or hand off"], ["later", "Someday / maybe"], ["cut", "Dropped"]];
+  var SRC_NAMES = { grat: "Gratitude list", excite: "Excitement map", portrait: "Future self-portrait", today: "Backcast, today", log: "Resonance log", projects: "Active projects" };
   R.board = function (b) {
-    var wrap = h("div", { class: "fld" });
+    var wrap = h("div", { class: "fld" }), ig = 0, SRCS = ["grat", "excite", "portrait", "today", "log"];
     function draw() {
       var arr = val(b.key, []); wrap.innerHTML = "";
       var act = arr.filter(function (r) { return r.b === "active"; }).length;
@@ -868,13 +898,25 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
       wrap.appendChild(h("div", { class: "addrow" }, nm, oc, h("button", { class: "ctl small primary", type: "button", text: "Add project", onclick: add })));
       wrap.appendChild(h("div", { class: "meter", role: "img", "aria-label": act + " active projects" }, h("i", { style: "width:" + Math.min(100, act / 20 * 100) + "%" })));
       wrap.appendChild(h("div", { class: "meta", text: act + " active. Aim for 10 to 20 in total. Most people only have room for 2 or 3 new ones." }));
+      var pk = h("div", { class: "spark" }), ptabs = h("div", { class: "chipset" }), pchips = h("div", { class: "chipset" });
+      SRCS.forEach(function (sn, k) { ptabs.appendChild(h("button", { class: "chipbtn", type: "button", "aria-pressed": k === ig ? "true" : "false", text: SRC_NAMES[sn], onclick: function () { ig = k; draw(); } })); });
+      var its = srcItems(SRCS[ig]);
+      if (!its.length) pchips.appendChild(h("p", { class: "meta", text: SRC_NAMES[SRCS[ig]] + " is empty so far. Fill it in on its step and the ideas show up here." }));
+      its.forEach(function (it) {
+        var nmx = trunc(it.t, 90), used = arr.some(function (r) { return r.src === SRCS[ig] && r.n === nmx; });
+        pchips.appendChild(h("button", { class: "chipbtn", type: "button", title: it.t, "aria-pressed": used ? "true" : "false", text: trunc(it.t, 56), onclick: function () {
+          if (used) return; var c = val(b.key, []).slice(); c.push({ n: nmx, o: it.t.length > 90 ? it.t : "", b: "idea", src: SRCS[ig] }); put(b.key, c); draw();
+        } }));
+      });
+      pk.append(h("span", { class: "lbl", text: "Pull in ideas from your earlier steps. They land in \u201cIdeas to sort\u201d." }), ptabs, pchips);
+      wrap.appendChild(pk);
       var board = h("div", { class: "board" });
       COLS.forEach(function (c, ci) {
         var col = h("div", { class: "col" }, h("h4", null, h("span", { text: c[1] }), h("span", { text: String(arr.filter(function (r) { return r.b === c[0]; }).length) })));
         arr.forEach(function (r, ri) {
           if (r.b !== c[0]) return;
           function mv(d) { var x = val(b.key, []).slice(); x[ri] = Object.assign({}, x[ri], { b: COLS[ci + d][0] }); put(b.key, x); draw(); }
-          col.appendChild(h("div", { class: "card" }, h("b", { text: r.n }), r.o ? h("span", { text: r.o }) : null,
+          col.appendChild(h("div", { class: "card" }, h("b", { text: r.n }), r.o ? h("span", { text: r.o }) : null, r.src ? h("span", { class: "meta", text: "From " + SRC_NAMES[r.src].toLowerCase() }) : null,
             h("div", { class: "acts" }, ci > 0 ? h("button", { class: "mini", type: "button", text: "←", "aria-label": "Move to " + COLS[ci - 1][1], onclick: function () { mv(-1); } }) : null,
               ci < COLS.length - 1 ? h("button", { class: "mini", type: "button", text: "→", "aria-label": "Move to " + COLS[ci + 1][1], onclick: function () { mv(1); } }) : null,
               h("button", { class: "mini", type: "button", text: "Remove", onclick: function () { var x = val(b.key, []).slice(); x.splice(ri, 1); put(b.key, x); draw(); } }))));
@@ -1055,8 +1097,8 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
     }
   }
   var modal = document.getElementById("modal"), lastFocus = null;
-  function openModal(title, body) {
-    lastFocus = document.activeElement; document.getElementById("modalTitle").textContent = title;
+  function openModal(title, body, wide) {
+    lastFocus = document.activeElement; document.getElementById("modalTitle").textContent = title; document.querySelector(".sheet").classList.toggle("wide", !!wide);
     var mb = document.getElementById("modalBody"); mb.innerHTML = ""; mb.appendChild(body); modal.hidden = false; document.getElementById("modalClose").focus();
   }
   function closeModal() { modal.hidden = true; if (lastFocus && lastFocus.focus) lastFocus.focus(); updateProgress(); }
@@ -1216,9 +1258,167 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
     downloads.save({ filename: name, data: text }).then(function () { say("Saved"); }, function (e) { say(e && e.code === "declined" ? "Cancelled" : "Saving a file did not work here."); });
   }
   function finale() {
-    var w = h("div", { class: "fld" }, h("p", { class: "summary", text: "You finished all twelve steps. Even a review that feels imperfect has already changed you, whether you notice it yet or not." }), h("div", { class: "callout", html: "<b>One last thing.</b> Open the last step and mark how you will close the ritual: burn the page, take a walk, light a candle. Then put your check-in dates in your calendar." }), h("div", null, h("button", { class: "ctl primary small", type: "button", text: "Export my review", onclick: function () { closeModal(); openExport(); } })));
+    var w = h("div", { class: "fld" }, h("p", { class: "summary", text: "You finished all twelve steps. Even a review that feels imperfect has already changed you, whether you notice it yet or not." }), h("div", { class: "callout", html: "<b>One last thing.</b> Open the last step and mark how you will close the ritual: burn the page, take a walk, light a candle. Then put your check-in dates in your calendar." }), h("div", { class: "meta" }, h("button", { class: "ctl primary small", type: "button", text: "See my recap", onclick: function () { closeModal(); openRecap(); } }), h("button", { class: "ctl small", type: "button", text: "Export my review", onclick: function () { closeModal(); openExport(); } })));
     openModal("Your review is complete", w);
     var r = document.getElementById("modalTitle").getBoundingClientRect(); burst(r.left + 120, r.top);
+  }
+
+
+  /* ---------- linking between steps ---------- */
+  function sentences(t) { return String(t || "").split(/(?<=[.!?])\s+|\n+/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length >= 25; }).slice(0, 16); }
+  function srcItems(n) {
+    if (n === "grat") return val("s2_grat", []).filter(filled).map(function (t) { return { t: t.trim() }; });
+    if (n === "excite") return val("s5_map", []).filter(function (r) { return filled(r.t); }).map(function (r) { return { t: r.t.trim() + (filled(r.w) ? ": " + r.w.trim() : "") }; });
+    if (n === "portrait") return sentences(val("s7_portrait", "")).map(function (t) { return { t: t }; });
+    if (n === "today") return sentences((val("s8_tl", {}).now || {}).x).map(function (t) { return { t: t }; });
+    if (n === "log") return S.log.map(function (e) { return { t: e.t }; });
+    if (n === "projects") return val("s9_board", []).filter(function (r) { return r.b === "active"; }).map(function (r) { return { t: r.n + (filled(r.o) ? ": " + r.o : "") }; });
+    return [];
+  }
+  function insertInto(key, text) {
+    var el = panel.querySelector('[data-k="' + key + '"]');
+    if (el) { el.value = (el.value.trim() ? el.value.replace(/\s+$/, "") + "\n" : "") + text; el.dispatchEvent(new Event("input", { bubbles: true })); }
+    else { var old = val(key, ""); put(key, (filled(old) ? old.replace(/\s+$/, "") + "\n" : "") + text); }
+  }
+  R.pull = function (b) {
+    var g = 0, tabs = h("div", { class: "chipset" }), list = h("div", { class: "chipset" });
+    var box = h("div", { class: "spark" }, h("span", { class: "lbl", text: b.label }), tabs, list);
+    function draw() {
+      tabs.innerHTML = ""; list.innerHTML = "";
+      if (b.from.length > 1) b.from.forEach(function (sn, k) { tabs.appendChild(h("button", { class: "chipbtn", type: "button", "aria-pressed": k === g ? "true" : "false", text: SRC_NAMES[sn], onclick: function () { g = k; draw(); } })); });
+      var its = srcItems(b.from[g]);
+      if (!its.length) list.appendChild(h("p", { class: "meta", text: SRC_NAMES[b.from[g]] + " is empty so far." }));
+      its.forEach(function (it) { list.appendChild(h("button", { class: "chipbtn", type: "button", title: it.t, text: trunc(it.t, 60), onclick: function () { insertInto(b.target, it.t); toast("Added"); } })); });
+    }
+    draw(); return box;
+  };
+  R.recapbtn = function () { return h("div", null, h("button", { class: "ctl small", type: "button", text: "Open my year recap", onclick: openRecap })); };
+
+  /* ---------- focus timer ---------- */
+  var TM = { mode: "focus", running: false, endsAt: 0, left: 50 * 60000, total: 50 * 60000, startedAt: 0, ph: 0, round: 0, tip: "" };
+  var BREAK_TIPS = ["Stand up and stretch.", "Drink some water.", "Look out of a window, far away.", "Walk around the room or step outside.", "Breathe slowly for a minute.", "Put on a song from your soundtrack."];
+  var tmEl = document.getElementById("timer"), actx = null, timelogDraw = null;
+  function tset() { return val("timer_set", { f: 50, b: 10, s: true }); }
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+  function localDay() { var d = new Date(); return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+  function fmt(ms) { var s = Math.max(0, Math.ceil(ms / 1000)); return pad2(Math.floor(s / 60)) + ":" + pad2(s % 60); }
+  function tmPct() { return Math.max(0, Math.min(100, (1 - TM.left / TM.total) * 100)); }
+  function beep() {
+    if (tset().s === false) return;
+    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); var o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime; o.frequency.value = 660; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.2, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9); o.connect(g); g.connect(actx.destination); o.start(); o.stop(t + 1); } catch (e) {}
+  }
+  function creditFocus() {
+    if (TM.mode !== "focus" || !TM.startedAt) return;
+    var mins = Math.min((Date.now() - TM.startedAt) / 60000, TM.total / 60000); TM.startedAt = 0;
+    if (mins < 0.5) return; mins = Math.round(mins * 10) / 10;
+    var t = JSON.parse(JSON.stringify(val("tlog", { ph: [0, 0, 0, 0, 0], days: {} }))), d = localDay();
+    t.ph[TM.ph] = (t.ph[TM.ph] || 0) + mins; t.days[d] = (t.days[d] || 0) + mins; put("tlog", t);
+    if (timelogDraw) timelogDraw();
+  }
+  function tmStart() {
+    if (TM.running) return; var now = Date.now();
+    try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.resume) actx.resume(); } catch (e) {}
+    TM.running = true; TM.endsAt = now + TM.left; if (TM.mode === "focus") { TM.startedAt = now; TM.ph = STEPS[cur].ph; } drawTimer();
+  }
+  function tmPause() { if (!TM.running) return; TM.left = Math.max(0, TM.endsAt - Date.now()); creditFocus(); TM.running = false; drawTimer(); }
+  function tmReset() { creditFocus(); TM.running = false; TM.mode = "focus"; TM.total = TM.left = tset().f * 60000; drawTimer(); }
+  function tmSkip() {
+    if (TM.mode === "focus") { creditFocus(); TM.round++; TM.mode = "break"; TM.total = TM.left = tset().b * 60000; TM.tip = BREAK_TIPS[TM.round % BREAK_TIPS.length]; }
+    else { TM.mode = "focus"; TM.total = TM.left = tset().f * 60000; }
+    TM.running = false; drawTimer();
+  }
+  function tmDone() {
+    var s = tset(), now = Date.now();
+    if (TM.mode === "focus") { creditFocus(); TM.round++; TM.mode = "break"; TM.total = TM.left = s.b * 60000; TM.tip = BREAK_TIPS[TM.round % BREAK_TIPS.length]; TM.running = true; TM.endsAt = now + TM.left; toast("Focus block done. Break time: " + TM.tip); }
+    else { TM.mode = "focus"; TM.total = TM.left = s.f * 60000; TM.running = false; toast("Break over. Ready for the next block?"); }
+    beep(); drawTimer();
+  }
+  function tmTick() {
+    if (!TM.running) return; var left = TM.endsAt - Date.now();
+    if (left <= 0) { tmDone(); return; }
+    TM.left = left; var t = document.getElementById("tmTime"), bar = document.getElementById("tmBar");
+    if (t) t.textContent = fmt(left); if (bar) bar.style.width = tmPct() + "%";
+  }
+  function drawTimer() {
+    var s = tset(), isF = TM.mode === "focus"; tmEl.innerHTML = "";
+    var top = h("div", { class: "tm-top" }, h("span", { class: "chip" + (isF ? "" : " alt"), text: isF ? "Focus" : "Break" }), h("div", { class: "tm-time", id: "tmTime", text: fmt(TM.left) }),
+      h("div", { class: "tm-btns" },
+        h("button", { class: "ctl small primary", type: "button", text: TM.running ? "Pause" : (TM.left < TM.total ? "Resume" : "Start"), onclick: function () { if (TM.running) tmPause(); else tmStart(); } }),
+        h("button", { class: "ctl small", type: "button", text: "Reset", onclick: tmReset }),
+        h("button", { class: "ctl small", type: "button", text: isF ? "Skip to break" : "Skip break", onclick: tmSkip })));
+    var presets = h("div", { class: "chipset" }, [[25, 5], [50, 10], [90, 15]].map(function (p) {
+      return h("button", { class: "chipbtn", type: "button", "aria-pressed": s.f === p[0] ? "true" : "false", text: p[0] + " / " + p[1] + " min", onclick: function () {
+        put("timer_set", { f: p[0], b: p[1], s: tset().s }); if (!TM.running) { TM.mode = "focus"; TM.total = TM.left = p[0] * 60000; } drawTimer();
+      } });
+    }));
+    var cb = h("input", { type: "checkbox" }); cb.checked = s.s !== false;
+    cb.addEventListener("change", function () { var c = tset(); put("timer_set", { f: c.f, b: c.b, s: cb.checked }); });
+    var tail = h("div", { class: "meta" }, h("label", { class: "tm-opt" }, cb, h("span", { text: "Sound" })), !isF && TM.tip ? h("span", { text: TM.tip }) : h("span", { text: "Time you focus is logged under the current phase." }));
+    tmEl.append(h("span", { class: "lbl", text: "Focus timer" }), top, h("div", { class: "meter", role: "img", "aria-label": "Block progress" }, h("i", { id: "tmBar", style: "width:" + tmPct() + "%" })), presets, tail);
+  }
+  setInterval(tmTick, 1000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) tmTick(); });
+  window.addEventListener("pagehide", creditFocus);
+  R.timelog = function () {
+    var box = h("div", { class: "fld" });
+    var rows = [[1, "Appreciate the past", 3, 4], [2, "Reflect on the present", 2, 3], [3, "Create the future", 3, 4]];
+    function draw() {
+      var t = val("tlog", { ph: [0, 0, 0, 0, 0], days: {} }), total = t.ph.reduce(function (a, x) { return a + (x || 0); }, 0) / 60;
+      box.innerHTML = "";
+      box.appendChild(h("span", { class: "lbl", text: "Logged with the focus timer" }));
+      rows.forEach(function (r) {
+        var hrs = (t.ph[r[0]] || 0) / 60;
+        box.appendChild(h("div", { class: "fld" }, h("div", { class: "meta" }, h("b", { text: r[1] }), h("span", { text: (Math.round(hrs * 10) / 10) + " h of " + r[2] + " to " + r[3] + " h" })), h("div", { class: "meter" }, h("i", { style: "width:" + Math.min(100, hrs / r[3] * 100) + "%" }))));
+      });
+      box.appendChild(h("div", { class: "meta", text: "Total " + (Math.round(total * 10) / 10) + " h of about 8 h. Start the timer under the wheel to add to this." }));
+    }
+    timelogDraw = draw; draw(); return box;
+  };
+
+  /* ---------- year recap ---------- */
+  function recapData() {
+    var tr = function (x) { return (x || "").trim(); }, pr = val("s10_prin", { sel: [], t: {} }), dt = val("s11_dates", {});
+    var rows = ["Mid-year check-in", "Quarterly check-in", "Monthly check-in"];
+    return {
+      year: new Date().getFullYear(), word: tr(val("s7_word", "")), oq: tr(val("s7_oq", "")), touch: tr(val("s0_touch", "")),
+      grat: val("s2_grat", []).filter(filled).map(tr).slice(0, 7),
+      proj: val("s9_board", []).filter(function (r) { return r.b === "active"; }).map(function (r) { return r.n + (filled(r.o) ? ": " + r.o : ""); }).slice(0, 10),
+      prin: pr.sel.filter(function (i) { return filled(pr.t[i]); }).map(function (i) { return "On " + AREAS[i].toLowerCase() + ": " + tr(pr.t[i]); }),
+      letgo: tr(val("s10_letgo", "")),
+      dates: rows.map(function (r, i) { return dt[i] ? r + ": " + dt[i] : ""; }).filter(Boolean)
+    };
+  }
+  function recapText(d) {
+    var o = "My Annual Review " + d.year + "\n";
+    if (d.word) o += "\nWord of the year: " + d.word;
+    if (d.oq) o += "\nOpen question: " + d.oq;
+    if (d.touch) o += "\nTouchstone: " + d.touch;
+    function sec(t, a) { if (a.length) o += "\n\n" + t + "\n" + a.map(function (x) { return "- " + x; }).join("\n"); }
+    sec("Grateful for", d.grat); sec("Projects I chose", d.proj); sec("How I want to live", d.prin);
+    if (d.letgo) o += "\n\nLetting go of\n" + d.letgo;
+    sec("Check-ins", d.dates);
+    return o + "\n";
+  }
+  function openRecap() {
+    var d = recapData(), msg = h("span", { class: "meta" });
+    function list(tag, a) { return h(tag, null, a.map(function (x) { return h("li", { text: x }); })); }
+    function sec(cls, title, node) { return h("div", { class: "rsec " + cls }, h("h4", { text: title }), node); }
+    var any = d.word || d.grat.length || d.proj.length || d.prin.length;
+    var grid = h("div", { class: "rgrid" },
+      d.grat.length ? sec("p1", "Grateful for", list("ol", d.grat)) : null,
+      d.proj.length ? sec("p3", "Projects I chose", list("ul", d.proj)) : null,
+      d.prin.length ? sec("p4", "How I want to live", list("ul", d.prin)) : null,
+      d.letgo ? sec("p2", "Letting go of", h("p", { text: d.letgo })) : null,
+      d.dates.length ? sec("p0", "Check-ins", list("ul", d.dates)) : null);
+    var card = h("div", { class: "recap" }, h("div", { class: "rbar" }, [0, 1, 2, 3, 4].map(function (i) { return h("i", { class: "p" + i }); })),
+      h("div", { class: "rbody" }, h("p", { class: "eyebrow", text: "My Annual Review " + d.year }),
+        d.word ? h("div", { class: "rword", text: d.word }) : h("div", { class: "rword", style: "color:var(--muted)", text: "Your word of the year" }),
+        d.oq ? h("p", { class: "rq", text: d.oq }) : null, d.touch ? h("p", { class: "rq", text: "“" + d.touch + "”" }) : null,
+        grid, any ? null : h("p", { class: "meta", text: "Fill in your word, gratitude list, projects and principles, and they appear here." })));
+    var acts = h("div", { class: "meta" }, h("button", { class: "ctl small primary", type: "button", text: "Copy as text", onclick: function () { copyText(recapText(d), msg); } }));
+    if (downloads) acts.appendChild(h("button", { class: "ctl small", type: "button", text: "Save as file", onclick: function () { saveFile("my-annual-review-" + d.year + "-recap.md", recapText(d), function (t) { msg.textContent = t; }); } }));
+    acts.appendChild(msg);
+    openModal("My year recap", h("div", { class: "fld" }, card, acts), true);
   }
 
   /* ---------- events ---------- */
@@ -1237,6 +1437,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
   document.getElementById("bLog").addEventListener("click", openLog);
   document.getElementById("bExport").addEventListener("click", openExport);
   document.getElementById("bVer").addEventListener("click", openVersions);
+  document.getElementById("bRecap").addEventListener("click", openRecap);
   document.addEventListener("keydown", function (e) {
     var t = e.target && e.target.tagName; if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT" || !modal.hidden) return;
     if (e.key === "ArrowRight") select(cur + 1, true, false); if (e.key === "ArrowLeft") select(cur - 1, true, false);
@@ -1251,6 +1452,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 14px; line-height: 1.
     if (!S.ts) idbGetAll("state").then(function (a) { var c = a[0]; if (c && c.ts && !S.ts) { S = { v: c.v || {}, done: c.done || {}, log: c.log || [], ts: c.ts }; saveLocal(); select(cur, false, false); } });
   });
   select(0, false, false);
+  TM.left = TM.total = tset().f * 60000; drawTimer();
   setStatus("local");
   (function apiInit() {
     if (!/^https?:$/.test(location.protocol) || !/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return;

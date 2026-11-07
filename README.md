@@ -19,6 +19,9 @@ Open `index.html` directly. Answers then save in the browser (localStorage and I
 ## Features
 - Wheel as progress map, one workspace per step.
 - **Digital / Paper / Both** per step: work in your notebook, then add photos of your pages and the lines worth keeping. Photos are resized in the browser and stored in the same local database.
+- **Linking between steps**: gratitude items, excitement topics, portrait lines and resonance-log entries can be pulled into the project board (as "Ideas to sort"), the portrait step and the annual letter.
+- **Focus timer** under the wheel (25/50/90 minute blocks with breaks). Focus time is logged per phase against the template's 8-hour plan.
+- **Recap** button: a one-page card with your word of the year, top gratitudes, chosen projects and principles. Copy it as text or save it as a file.
 - **Versions** button: save named snapshots (for example one per year) and restore them.
 - **Backup file**: download or import all answers and versions as one JSON file.
 
